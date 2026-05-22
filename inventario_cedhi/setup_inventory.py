@@ -28,6 +28,8 @@ def setup_inventory_mvp():
 	results["Client Scripts"] = create_inventory_client_scripts()
 	results["Initial Users"] = create_initial_users()
 	results["Workspace"] = create_inventory_workspace()
+	results["Child Workspaces"] = create_child_workspaces()
+	results["Hide Workspaces"] = hide_unwanted_workspaces()
 	frappe.db.commit()
 	frappe.clear_cache()
 	return results
@@ -196,13 +198,19 @@ def create_articulo_inventario_doctype():
 		},
 		{"fieldname": "fecha_adquisicion", "label": "Fecha de adquisicion", "fieldtype": "Date"},
 		{
+			"fieldname": "codigo_interno",
+			"label": "Codigo interno",
+			"fieldtype": "Data",
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+		},
+		{
 			"fieldname": "datos_tecnicos_section",
 			"label": "Datos Tecnicos",
 			"fieldtype": "Section Break",
 		},
 		{"fieldname": "marca", "label": "Marca", "fieldtype": "Data"},
 		{"fieldname": "modelo", "label": "Modelo", "fieldtype": "Data"},
-		{"fieldname": "codigo_interno", "label": "Codigo interno", "fieldtype": "Data"},
 		{"fieldname": "fotografia", "label": "Fotografia", "fieldtype": "Attach Image"},
 		{
 			"fieldname": "datos_de_stock_section",
@@ -291,6 +299,18 @@ def _create_or_update_core_doctype(doctype_name, fields, title_field):
 		row.idx = next_idx
 		next_idx += 1
 		added.append(fieldname)
+
+	# Re-sort doc.fields to match the order of fields in the source code definition list
+	field_order = {fd["fieldname"]: i for i, fd in enumerate(fields)}
+	def get_field_sort_key(df):
+		if df.fieldname in field_order:
+			return (0, field_order[df.fieldname])
+		else:
+			return (1, cint(df.idx))
+	
+	doc.fields.sort(key=get_field_sort_key)
+	for idx, df in enumerate(doc.fields, start=1):
+		df.idx = idx
 
 	if created:
 		doc.insert(ignore_permissions=True)
@@ -1119,7 +1139,7 @@ def create_movimiento_inventario_doctype():
 			"module": module,
 			"custom": 1,
 			"allow_import": 1,
-			"autoname": "format:MOV-.YYYY.-.#####",
+			"autoname": "format:MOV-{YYYY}-{#####}",
 			"is_submittable": 1,
 			"fields": [
 				{
@@ -1140,7 +1160,7 @@ def create_movimiento_inventario_doctype():
 					"fieldname": "tipo_movimiento",
 					"label": "Tipo de Movimiento",
 					"fieldtype": "Select",
-					"options": "Entrada\nSalida",
+					"options": "Entrada\nSalida\nAjuste",
 					"reqd": 1,
 					"in_list_view": 1,
 					"in_standard_filter": 1,
@@ -1268,7 +1288,10 @@ def configure_movimiento_traceability_fields():
 			field.label = "Stock actual del articulo"
 			field.fetch_from = "articulo.stock_actual"
 			field.read_only = 1
+		if field.fieldname == "tipo_movimiento":
+			field.options = "Entrada\nSalida\nAjuste"
 
+	doc.autoname = "format:MOV-{YYYY}-{#####}"
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 	frappe.clear_cache(doctype=doctype_name)
@@ -1790,10 +1813,33 @@ def create_inventory_number_cards():
 			"function": "Count",
 		},
 		{
+			"label": "Artículos Activos",
+			"document_type": "Articulo de Inventario",
+			"function": "Count",
+			"filters_json": json.dumps([["Articulo de Inventario", "estado", "=", "Activo"]]),
+		},
+		{
+			"label": "Artículos en Reparación",
+			"document_type": "Articulo de Inventario",
+			"function": "Count",
+			"filters_json": json.dumps([["Articulo de Inventario", "estado", "=", "En reparación"]]),
+		},
+		{
+			"label": "Artículos de Baja",
+			"document_type": "Articulo de Inventario",
+			"function": "Count",
+			"filters_json": json.dumps([["Articulo de Inventario", "estado", "=", "De baja"]]),
+		},
+		{
 			"label": "Alertas Pendientes",
 			"document_type": "Alerta de Inventario",
 			"function": "Count",
 			"filters_json": json.dumps([["Alerta de Inventario", "estado_alerta", "=", "Pendiente"]]),
+		},
+		{
+			"label": "Alertas Totales",
+			"document_type": "Alerta de Inventario",
+			"function": "Count",
 		},
 	]
 
@@ -1808,9 +1854,14 @@ def create_inventory_number_cards():
 					**card_data,
 				}
 			)
+			card.currency = None
 			card.insert(ignore_permissions=True)
 			results.append(card.name)
 		else:
+			card = frappe.get_doc("Number Card", card_data["label"])
+			card.update(card_data)
+			card.currency = None
+			card.save(ignore_permissions=True)
 			results.append(card_data["label"])
 
 	return results
@@ -1837,6 +1888,24 @@ def create_inventory_charts():
 			"type": "Bar",
 			"module": INVENTORY_MODULE,
 		},
+		{
+			"chart_name": "Alertas por Tipo",
+			"chart_type": "Group By",
+			"document_type": "Alerta de Inventario",
+			"group_by_based_on": "tipo_alerta",
+			"group_by_type": "Count",
+			"type": "Donut",
+			"module": INVENTORY_MODULE,
+		},
+		{
+			"chart_name": "Alertas por Estado",
+			"chart_type": "Group By",
+			"document_type": "Alerta de Inventario",
+			"group_by_based_on": "estado_alerta",
+			"group_by_type": "Count",
+			"type": "Bar",
+			"module": INVENTORY_MODULE,
+		},
 	]
 
 	results = []
@@ -1850,9 +1919,14 @@ def create_inventory_charts():
 					**chart_data,
 				}
 			)
+			chart.currency = None
 			chart.insert(ignore_permissions=True)
 			results.append(chart.name)
 		else:
+			chart = frappe.get_doc("Dashboard Chart", chart_data["chart_name"])
+			chart.update(chart_data)
+			chart.currency = None
+			chart.save(ignore_permissions=True)
 			results.append(chart_data["chart_name"])
 	return results
 
@@ -2001,8 +2075,174 @@ if (!window.cedhi_mobile_navigation.interval) {
     window.cedhi_mobile_navigation.interval = window.setInterval(window.cedhi_mobile_navigation.ensure, 800);
 }
 """
+	kardex_dialog_helper = """
+window.open_quick_kardex_dialog = function(opts) {
+    opts = opts || {};
+    let d = new frappe.ui.Dialog({
+        title: __('Actualización Rápida de Inventario (Kardex)'),
+        fields: [
+            {
+                label: __('Artículo'),
+                fieldname: 'articulo',
+                fieldtype: 'Link',
+                options: 'Articulo de Inventario',
+                reqd: 1,
+                default: opts.articulo || '',
+                read_only: opts.articulo ? 1 : 0,
+                onchange: function() {
+                    let art = d.get_value('articulo');
+                    if (art) {
+                        frappe.db.get_value('Articulo de Inventario', art, ['nombre_articulo', 'stock_actual', 'modulo'], (r) => {
+                            if (r) {
+                                d.set_description('articulo', `<div style="margin-top: 4px; padding: 6px 10px; background-color: #f8f9fa; border-left: 3px solid #3498db; border-radius: 3px; font-size: 13px;"><b>${r.nombre_articulo}</b> | Stock actual: <strong style="color: #2c3e50;">${r.stock_actual || 0}</strong></div>`);
+                                update_qty_description(d, r.stock_actual || 0);
+                                
+                                let current_motivo = d.get_value('motivo');
+                                if (!current_motivo || current_motivo === 'Ajuste rápido de inventario' || current_motivo === 'Ajuste rápido de cocina') {
+                                    if (r.modulo === 'Gastronomia') {
+                                        d.set_value('motivo', 'Ajuste rápido de cocina');
+                                    } else {
+                                        d.set_value('motivo', 'Ajuste rápido de inventario');
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        d.set_description('articulo', '');
+                        update_qty_description(d, 0);
+                    }
+                }
+            },
+            {
+                label: __('Tipo de Movimiento'),
+                fieldname: 'tipo_movimiento',
+                fieldtype: 'Select',
+                options: ['Entrada', 'Salida', 'Ajuste'],
+                default: 'Ajuste',
+                reqd: 1,
+                onchange: function() {
+                    let art = d.get_value('articulo');
+                    if (art) {
+                        frappe.db.get_value('Articulo de Inventario', art, 'stock_actual', (r) => {
+                            update_qty_description(d, (r && r.stock_actual) ? r.stock_actual : 0);
+                        });
+                    } else {
+                        update_qty_description(d, 0);
+                    }
+                }
+            },
+            {
+                label: __('Cantidad / Existencia'),
+                fieldname: 'cantidad',
+                fieldtype: 'Float',
+                reqd: 1,
+                description: __('Para Ajuste, ingrese la nueva existencia total.')
+            },
+            {
+                label: __('Motivo / Referencia'),
+                fieldname: 'motivo',
+                fieldtype: 'Small Text',
+                reqd: 1,
+                default: 'Ajuste rápido de cocina'
+            }
+        ],
+        primary_action_label: __('Registrar'),
+        primary_action: function(values) {
+            if (!values.articulo || !values.tipo_movimiento || values.cantidad === undefined || !values.motivo) {
+                frappe.msgprint(__('Todos los campos son obligatorios.'));
+                return;
+            }
+            if (values.cantidad < 0) {
+                frappe.msgprint(__('La cantidad no puede ser negativa.'));
+                return;
+            }
+            
+            d.get_primary_btn().prop('disabled', true);
+            frappe.call({
+                method: 'inventario_cedhi.inventory_logic.create_quick_movement',
+                args: {
+                    articulo: values.articulo,
+                    tipo_movimiento: values.tipo_movimiento,
+                    cantidad: values.cantidad,
+                    motivo: values.motivo
+                },
+                callback: function(r) {
+                    d.get_primary_btn().prop('disabled', false);
+                    if (!r.exc) {
+                        frappe.show_alert({
+                            message: __('Movimiento registrado exitosamente: {0}', [r.message]),
+                            indicator: 'green'
+                        });
+                        d.hide();
+                        if (opts.callback) {
+                            opts.callback();
+                        }
+                    }
+                },
+                error: function(err) {
+                    d.get_primary_btn().prop('disabled', false);
+                }
+            });
+        }
+    });
+
+    function update_qty_description(dialog_inst, current_stock) {
+        let type = dialog_inst.get_value('tipo_movimiento');
+        let qty_field = dialog_inst.fields_dict.cantidad;
+        if (!qty_field) return;
+        
+        if (type === 'Ajuste') {
+            dialog_inst.set_label('cantidad', __('Nueva Existencia Total'));
+            dialog_inst.set_description('cantidad', `<div style="margin-top: 4px; color: #7f8c8d; font-size: 12px;">El stock se establecerá exactamente a este valor (Diferencia de ajuste: <strong id="kardex-dialog-delta">0</strong>). Actual: ${current_stock}</div>`);
+            
+            let $input = dialog_inst.$wrapper.find('input[data-fieldname="cantidad"]');
+            $input.off('input.kardex_calc').on('input.kardex_calc', function() {
+                let val = parseFloat($(this).val()) || 0;
+                let delta = val - current_stock;
+                let delta_text = delta >= 0 ? '+' + delta : '' + delta;
+                let color = delta >= 0 ? '#27ae60' : '#c0392b';
+                dialog_inst.$wrapper.find('#kardex-dialog-delta')
+                    .text(delta_text)
+                    .css('color', color);
+            });
+            $input.trigger('input.kardex_calc');
+        } else if (type === 'Entrada') {
+            dialog_inst.set_label('cantidad', __('Cantidad a Ingresar'));
+            dialog_inst.set_description('cantidad', `<div style="margin-top: 4px; color: #7f8c8d; font-size: 12px;">Se sumará al stock actual. Nuevo stock proyectado: <strong id="kardex-dialog-projected">${current_stock}</strong></div>`);
+            
+            let $input = dialog_inst.$wrapper.find('input[data-fieldname="cantidad"]');
+            $input.off('input.kardex_calc').on('input.kardex_calc', function() {
+                let val = parseFloat($(this).val()) || 0;
+                let projected = current_stock + val;
+                dialog_inst.$wrapper.find('#kardex-dialog-projected')
+                    .text(projected);
+            });
+            $input.trigger('input.kardex_calc');
+        } else if (type === 'Salida') {
+            dialog_inst.set_label('cantidad', __('Cantidad a Retirar'));
+            dialog_inst.set_description('cantidad', `<div style="margin-top: 4px; color: #7f8c8d; font-size: 12px;">Se restará del stock actual. Nuevo stock proyectado: <strong id="kardex-dialog-projected">${current_stock}</strong></div>`);
+            
+            let $input = dialog_inst.$wrapper.find('input[data-fieldname="cantidad"]');
+            $input.off('input.kardex_calc').on('input.kardex_calc', function() {
+                let val = parseFloat($(this).val()) || 0;
+                let projected = current_stock - val;
+                let color = projected < 0 ? '#c0392b' : '#7f8c8d';
+                dialog_inst.$wrapper.find('#kardex-dialog-projected')
+                    .text(projected)
+                    .css('color', color);
+            });
+            $input.trigger('input.kardex_calc');
+        }
+    }
+
+    d.show();
+    if (opts.articulo) {
+        d.trigger('articulo');
+    }
+};
+"""
+
 	list_view_doctypes = [
-		"Articulo de Inventario",
 		"Alerta de Inventario",
 		"Movimiento de Inventario",
 		"Ubicacion",
@@ -2031,11 +2271,31 @@ frappe.ui.form.on('Articulo de Inventario', {
             frm.set_df_property('stock_actual', 'description', '');
         }
 
+        // RF-GE-02: Auto-generate code placeholder hint
+        if (frm.is_new() && frm.doc.modulo) {
+            frm.set_df_property('codigo_interno', 'placeholder', 'Generado automáticamente al guardar');
+        } else {
+            frm.set_df_property('codigo_interno', 'placeholder', '');
+        }
+
         // Personalidad: Color de fondo según módulo
         if (frm.doc.modulo === 'TI') {
             frm.set_df_property('datos_generales_section', 'label', '💻 Datos Técnicos TI');
         } else if (frm.doc.modulo === 'Gastronomia') {
             frm.set_df_property('datos_generales_section', 'label', '🍳 Control de Gastronomía');
+        }
+
+        // RF-GA-01: Quick movement button on Form View
+        if (!frm.is_new()) {
+            frm.add_custom_button(__('Registrar Movimiento (Kardex)'), function() {
+                window.open_quick_kardex_dialog({
+                    articulo: frm.doc.name,
+                    modulo: frm.doc.modulo,
+                    callback: function() {
+                        frm.reload_doc();
+                    }
+                });
+            });
         }
     },
     modulo: function(frm) {
@@ -2051,7 +2311,36 @@ frappe.ui.form.on('Articulo de Inventario', {
         }
     }
 });
-""" + mobile_navigation_helper,
+""" + mobile_navigation_helper + kardex_dialog_helper,
+		},
+		{
+			"dt": "Articulo de Inventario",
+			"view": "List",
+			"name": "Articulo de Inventario - Navegacion movil Lista",
+			"script": """
+frappe.listview_settings['Articulo de Inventario'] = frappe.listview_settings['Articulo de Inventario'] || {};
+frappe.listview_settings['Articulo de Inventario'].onload = function(listview) {
+    window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
+    
+    // RF-GA-01: Quick movement button on List View
+    listview.page.add_inner_button(__('Kardex Rápido (Cocina)'), function() {
+        let selected = listview.get_checked_items();
+        let art = '';
+        if (selected && selected.length > 0) {
+            art = selected[0].name;
+        }
+        window.open_quick_kardex_dialog({
+            articulo: art,
+            callback: function() {
+                listview.refresh();
+            }
+        });
+    });
+};
+frappe.listview_settings['Articulo de Inventario'].refresh = function(listview) {
+    window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
+};
+""" + mobile_navigation_helper + kardex_dialog_helper,
 		}
 	]
 
@@ -2068,18 +2357,14 @@ frappe.ui.form.on('Articulo de Inventario', {
 					"dt": doctype_name,
 					"view": "List",
 					"name": f"{doctype_name} - Navegacion movil Lista",
-					"script": f"""
-frappe.listview_settings[{json.dumps(doctype_name)}] = frappe.listview_settings[{json.dumps(doctype_name)}] || {{}};
-frappe.listview_settings[{json.dumps(doctype_name)}].onload = function() {{
-    window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
-}};
-frappe.listview_settings[{json.dumps(doctype_name)}].refresh = function() {{
-    window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
-}};
-""" + mobile_navigation_helper,
+					"script": f"frappe.listview_settings[{json.dumps(doctype_name)}] = frappe.listview_settings[{json.dumps(doctype_name)}] || {{}}; frappe.listview_settings[{json.dumps(doctype_name)}].onload = function() {{ window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure(); }}; frappe.listview_settings[{json.dumps(doctype_name)}].refresh = function() {{ window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure(); }};" + mobile_navigation_helper,
 				},
 			]
 		)
+
+	# Delete redundant form script if exists to consolidate form logic
+	if frappe.db.exists("Client Script", "Articulo de Inventario - Navegacion movil"):
+		frappe.delete_doc("Client Script", "Articulo de Inventario - Navegacion movil", ignore_permissions=True)
 
 	results = []
 	for script_data in scripts:
@@ -2183,40 +2468,67 @@ def create_inventory_workspace():
 
 	# Define Content structure (The Layout)
 	content = [
-		{"id": "hero", "type": "header", "data": {"text": '<div class="hero-banner"><h1>Inventario CEDHI</h1><p>Gestión inteligente de activos y suministros.</p></div>', "col": 12}},
-		{"id": "mc1", "type": "number_card", "data": {"number_card_name": "Total Articulos", "col": 6}},
-		{"id": "mc2", "type": "number_card", "data": {"number_card_name": "Alertas Pendientes", "col": 6}},
+		{"id": "hero", "type": "header", "data": {"text": '<div class="hero-banner main-banner"><h1>Inventario CEDHI</h1><p>Gestión inteligente de activos y suministros.</p></div>', "col": 12}},
+		# Row 1: KPI Artículos
+		{"id": "mc_total", "type": "number_card", "data": {"number_card_name": "Total Articulos", "col": 3}},
+		{"id": "mc_activos", "type": "number_card", "data": {"number_card_name": "Artículos Activos", "col": 3}},
+		{"id": "mc_reparacion", "type": "number_card", "data": {"number_card_name": "Artículos en Reparación", "col": 3}},
+		{"id": "mc_baja", "type": "number_card", "data": {"number_card_name": "Artículos de Baja", "col": 3}},
+		
+		# Row 2: KPI Alertas
+		{"id": "mc_alertas_pend", "type": "number_card", "data": {"number_card_name": "Alertas Pendientes", "col": 6}},
+		{"id": "mc_alertas_tot", "type": "number_card", "data": {"number_card_name": "Alertas Totales", "col": 6}},
+		
 		{"id": "s1", "type": "spacer", "data": {"col": 12}},
+		
+		# Row 3: Shortcuts & Actions
 		{"id": "sh1", "type": "shortcut", "data": {"shortcut_name": "REPORTE MAESTRO (EXCEL)", "col": 12}},
+		
 		{"id": "s2", "type": "spacer", "data": {"col": 12}},
+		
+		# Row 4: Navigation Cards
 		{"id": "c1", "type": "card", "data": {"card_name": "Operaciones", "col": 4}},
 		{"id": "c2", "type": "card", "data": {"card_name": "Reportes", "col": 4}},
 		{"id": "c3", "type": "card", "data": {"card_name": "Configuración", "col": 4}},
-		{"id": "ch1", "type": "chart", "data": {"chart_name": "Estado de Activos", "col": 12}},
+		
+		{"id": "s3", "type": "spacer", "data": {"col": 12}},
+		
+		# Row 5: Charts for Assets & Modules
+		{"id": "ch_activos", "type": "chart", "data": {"chart_name": "Estado de Activos", "col": 6}},
+		{"id": "ch_modulos", "type": "chart", "data": {"chart_name": "Distribución por Módulo", "col": 6}},
+		
+		# Row 6: Charts for Alerts
+		{"id": "ch_alertas_tipo", "type": "chart", "data": {"chart_name": "Alertas por Tipo", "col": 6}},
+		{"id": "ch_alertas_estado", "type": "chart", "data": {"chart_name": "Alertas por Estado", "col": 6}},
 	]
 
-	# Define Links (The Groups)
+	# Define Links grouped using Card Breaks sequential rows (Frappe v15 format)
 	links = [
-		# Operaciones
-		{"label": "Catálogo Maestro", "link_to": "Articulo de Inventario", "link_type": "DocType", "type": "Link", "group": "Operaciones"},
-		{"label": "Kardex Digital", "link_to": "Movimiento de Inventario", "link_type": "DocType", "type": "Link", "group": "Operaciones"},
-		{"label": "Incidencias", "link_to": "Alerta de Inventario", "link_type": "DocType", "type": "Link", "group": "Operaciones"},
-		# Reportes
-		{"label": "Reporte Maestro (Excel)", "link_to": "Reporte Maestro de Inventario", "link_type": "Report", "type": "Link", "group": "Reportes"},
-		{"label": "Bandeja de Alertas", "link_to": "Bandeja de Alertas CEDHI", "link_type": "Report", "type": "Link", "group": "Reportes"},
-		{"label": "Kardex de Movimientos", "link_to": "Kardex de Movimientos", "link_type": "Report", "type": "Link", "group": "Reportes"},
-		{"label": "Stock Crítico", "link_to": "Stock Critico Gastronomia", "link_type": "Report", "type": "Link", "group": "Reportes"},
-		{"label": "Resumen por Área", "link_to": "Resumen Inventario por Modulo", "link_type": "Report", "type": "Link", "group": "Reportes"},
-		# Configuración
-		{"label": "Espacios Físicos", "link_to": "Ubicacion", "link_type": "DocType", "type": "Link", "group": "Configuración"},
-		{"label": "Importación Masiva", "link_to": "Data Import", "link_type": "DocType", "type": "Link", "group": "Configuración"},
-		{"label": "Gestión de Usuarios", "link_to": "User", "link_type": "DocType", "type": "Link", "group": "Configuración"},
+		# Operaciones Card Break
+		{"label": "Operaciones", "type": "Card Break"},
+		{"label": "Catálogo Maestro", "link_to": "Articulo de Inventario", "link_type": "DocType", "type": "Link"},
+		{"label": "Kardex Digital", "link_to": "Movimiento de Inventario", "link_type": "DocType", "type": "Link"},
+		{"label": "Incidencias", "link_to": "Alerta de Inventario", "link_type": "DocType", "type": "Link"},
+		
+		# Reportes Card Break
+		{"label": "Reportes", "type": "Card Break"},
+		{"label": "Reporte Maestro (Excel)", "link_to": "Reporte Maestro de Inventario", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
+		{"label": "Bandeja de Alertas", "link_to": "Bandeja de Alertas CEDHI", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Alerta de Inventario"},
+		{"label": "Kardex de Movimientos", "link_to": "Kardex de Movimientos", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Movimiento de Inventario"},
+		{"label": "Stock Crítico", "link_to": "Stock Critico Gastronomia", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
+		{"label": "Resumen por Área", "link_to": "Resumen Inventario por Modulo", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
+		
+		# Configuración Card Break
+		{"label": "Configuración", "type": "Card Break"},
+		{"label": "Espacios Físicos", "link_to": "Ubicacion", "link_type": "DocType", "type": "Link"},
+		{"label": "Importación Masiva", "link_to": "Data Import", "link_type": "DocType", "type": "Link"},
+		{"label": "Gestión de Usuarios", "link_to": "User", "link_type": "DocType", "type": "Link"},
 	]
 
 	shortcuts = [
 		{
-			"type": "Report",
-			"link_to": "Reporte Maestro de Inventario",
+			"type": "URL",
+			"url": "/app/query-report/Reporte Maestro de Inventario",
 			"label": "REPORTE MAESTRO (EXCEL)",
 			"color": "Green",
 		}
@@ -2232,11 +2544,29 @@ def create_inventory_workspace():
 		{"role": "Reportante"},
 	]
 
+	number_cards = [
+		{"number_card_name": "Total Articulos"},
+		{"number_card_name": "Artículos Activos"},
+		{"number_card_name": "Artículos en Reparación"},
+		{"number_card_name": "Artículos de Baja"},
+		{"number_card_name": "Alertas Pendientes"},
+		{"number_card_name": "Alertas Totales"},
+	]
+
+	charts = [
+		{"chart_name": "Estado de Activos"},
+		{"chart_name": "Distribución por Módulo"},
+		{"chart_name": "Alertas por Tipo"},
+		{"chart_name": "Alertas por Estado"},
+	]
+
 	if frappe.db.exists("Workspace", name):
 		workspace = frappe.get_doc("Workspace", name)
 		workspace.shortcuts = []
 		workspace.links = []
 		workspace.roles = []
+		workspace.number_cards = []
+		workspace.charts = []
 		created = False
 	else:
 		workspace = frappe.get_doc({"doctype": "Workspace", "label": name, "title": name})
@@ -2251,6 +2581,7 @@ def create_inventory_workspace():
 			"indicator_color": "blue",
 			"public": 1,
 			"is_hidden": 0,
+			"hide_custom": 1,
 			"content": json.dumps(content),
 		}
 	)
@@ -2261,6 +2592,10 @@ def create_inventory_workspace():
 		workspace.append("shortcuts", shortcut)
 	for role in roles:
 		workspace.append("roles", role)
+	for card in number_cards:
+		workspace.append("number_cards", card)
+	for chart in charts:
+		workspace.append("charts", chart)
 
 	if created:
 		workspace.insert(ignore_permissions=True)
@@ -2270,3 +2605,121 @@ def create_inventory_workspace():
 	frappe.db.commit()
 	frappe.clear_cache()
 	return {"created": created, "workspace": name}
+
+
+def create_child_workspaces():
+	"""Create child workspaces (Operaciones, Reportes, Configuración) under 'Inventario CEDHI' parent."""
+	parent = "Inventario CEDHI"
+	module = INVENTORY_MODULE
+	results = []
+
+	child_pages = [
+		{
+			"name": "Operaciones",
+			"icon": "list",
+			"banner_text": '<div class="hero-banner operations-banner"><h1>Operaciones</h1><p>Control de transacciones, incidencias y catálogo maestro de artículos.</p></div>',
+			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Admin General", "Revisor", "Reportante"],
+			"links": [
+				{"label": "Documentos de Inventario", "type": "Card Break"},
+				{"label": "Catálogo Maestro", "link_to": "Articulo de Inventario", "link_type": "DocType", "type": "Link"},
+				{"label": "Kardex Digital", "link_to": "Movimiento de Inventario", "link_type": "DocType", "type": "Link"},
+				{"label": "Incidencias", "link_to": "Alerta de Inventario", "link_type": "DocType", "type": "Link"},
+			]
+		},
+		{
+			"name": "Reportes",
+			"icon": "trending-up",
+			"banner_text": '<div class="hero-banner reports-banner"><h1>Reportes</h1><p>Visualización de datos analíticos, stock crítico y reportes históricos.</p></div>',
+			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Admin General", "Revisor"],
+			"links": [
+				{"label": "Reportes de Gestión", "type": "Card Break"},
+				{"label": "Reporte Maestro (Excel)", "link_to": "Reporte Maestro de Inventario", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
+				{"label": "Bandeja de Alertas", "link_to": "Bandeja de Alertas CEDHI", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Alerta de Inventario"},
+				{"label": "Kardex de Movimientos", "link_to": "Kardex de Movimientos", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Movimiento de Inventario"},
+				{"label": "Stock Crítico", "link_to": "Stock Critico Gastronomia", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
+				{"label": "Resumen por Área", "link_to": "Resumen Inventario por Modulo", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
+			]
+		},
+		{
+			"name": "Configuración",
+			"icon": "settings",
+			"banner_text": '<div class="hero-banner configuration-banner"><h1>Configuración</h1><p>Gestión de espacios físicos, usuarios e importación de catálogos.</p></div>',
+			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Admin General"],
+			"links": [
+				{"label": "Parámetros del Sistema", "type": "Card Break"},
+				{"label": "Espacios Físicos", "link_to": "Ubicacion", "link_type": "DocType", "type": "Link"},
+				{"label": "Importación Masiva", "link_to": "Data Import", "link_type": "DocType", "type": "Link"},
+				{"label": "Gestión de Usuarios", "link_to": "User", "link_type": "DocType", "type": "Link"},
+			]
+		}
+	]
+
+	for page in child_pages:
+		ws_name = page["name"]
+		if frappe.db.exists("Workspace", ws_name):
+			workspace = frappe.get_doc("Workspace", ws_name)
+			workspace.links = []
+			workspace.roles = []
+			created = False
+		else:
+			workspace = frappe.get_doc({"doctype": "Workspace", "label": ws_name, "title": ws_name})
+			created = True
+
+		content = [
+			{"id": "header", "type": "header", "data": {"text": page["banner_text"], "col": 12}},
+			{"id": "card_break", "type": "card", "data": {"card_name": page["links"][0]["label"], "col": 12}}
+		]
+
+		workspace.update({
+			"label": ws_name,
+			"title": ws_name,
+			"parent_page": parent,
+			"module": module,
+			"icon": page["icon"],
+			"indicator_color": "blue",
+			"public": 1,
+			"is_hidden": 0,
+			"hide_custom": 1,
+			"content": json.dumps(content)
+		})
+
+		for link in page["links"]:
+			workspace.append("links", link)
+		for r in page["roles"]:
+			workspace.append("roles", {"role": r})
+
+		if created:
+			workspace.insert(ignore_permissions=True)
+		else:
+			workspace.save(ignore_permissions=True)
+
+		results.append({"name": ws_name, "status": "created" if created else "saved"})
+
+	frappe.db.commit()
+	frappe.clear_cache()
+	return results
+
+
+def hide_unwanted_workspaces():
+	"""Hide all public workspaces except 'Inventario CEDHI' and its children to keep the sidebar clean."""
+	allowed_workspaces = ["Inventario CEDHI", "Operaciones", "Reportes", "Configuración"]
+
+	# Show allowed workspaces
+	for ws_name in allowed_workspaces:
+		if frappe.db.exists("Workspace", ws_name):
+			frappe.db.set_value("Workspace", ws_name, "is_hidden", 0, update_modified=False)
+
+	# Hide all other public workspaces
+	workspaces_to_hide = frappe.get_all(
+		"Workspace",
+		filters={"public": 1, "name": ["not in", allowed_workspaces]},
+		pluck="name"
+	)
+	for ws_name in workspaces_to_hide:
+		frappe.db.set_value("Workspace", ws_name, "is_hidden", 1, update_modified=False)
+
+	frappe.db.commit()
+	frappe.clear_cache()
+	return {"hidden_workspaces": workspaces_to_hide}
+
+
