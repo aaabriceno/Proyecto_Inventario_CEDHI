@@ -166,6 +166,10 @@ doc_events = {
 	"Movimiento de Inventario": {
 		"on_submit": "inventario_cedhi.inventory_logic.update_stock_on_movement",
 		"on_cancel": "inventario_cedhi.inventory_logic.reverse_stock_on_cancel",
+	},
+	"User": {
+		"before_insert": "inventario_cedhi.inventory_logic.enforce_user_language",
+		"validate": "inventario_cedhi.inventory_logic.enforce_user_language",
 	}
 }
 
@@ -220,12 +224,12 @@ doc_events = {
 
 # Request Events
 # ----------------
-# before_request = ["inventario_cedhi.utils.before_request"]
+before_request = ["inventario_cedhi.inventory_logic.force_spanish_language"]
 # after_request = ["inventario_cedhi.utils.after_request"]
 
 # Job Events
 # ----------
-# before_job = ["inventario_cedhi.utils.before_job"]
+before_job = ["inventario_cedhi.inventory_logic.force_spanish_language"]
 # after_job = ["inventario_cedhi.utils.after_job"]
 
 # User Data Protection

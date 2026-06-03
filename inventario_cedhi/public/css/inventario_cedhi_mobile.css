@@ -6,7 +6,7 @@
 ==========================================================================
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap');
 
 /* ==========================================================================
    0. Custom Variables & Design Tokens
@@ -679,4 +679,222 @@ input.form-control:focus, select.form-control:focus, textarea.form-control:focus
         flex: 0 0 100% !important;
         max-width: 100% !important;
     }
+}
+
+/* ── CUSTOM THEME OVERRIDES ── */
+:root {
+  --cedhi-navy:       #1A2F6E;
+  --cedhi-navy-dark:  #0F1D4A;
+  --cedhi-navy-light: #2A4090;
+  --cedhi-red:        #D9202A;
+  --cedhi-yellow:     #F5C300;
+  --cedhi-green:      #2DAE6A;
+  --cedhi-cyan:       #00AECC;
+  --cedhi-bg:         #F4F6FA;
+  --cedhi-border:     #D0D8EE;
+  --cedhi-text:       #1A2F6E;
+  --cedhi-text-muted: #5A6A8E;
+}
+
+/* ── Tipografía global ── */
+body, .frappe-app {
+  font-family: 'Nunito', sans-serif !important;
+}
+.navbar-brand, h1, h2, h3, h4,
+.page-title, .workspace-title,
+.widget-title, .number-card .card-title {
+  font-family: 'Outfit', sans-serif !important;
+}
+
+/* ── Navbar / Topbar ── */
+.navbar {
+  background: var(--cedhi-navy) !important;
+  border-bottom: none !important;
+  box-shadow: 0 2px 12px rgba(26,47,110,0.18) !important;
+}
+.navbar .navbar-brand img {
+  filter: brightness(0) invert(1);
+}
+.navbar .nav-link,
+.navbar .navbar-brand,
+.navbar-nav .nav-link {
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 600;
+}
+.navbar .nav-link:hover {
+  color: #fff !important;
+}
+/* Indicador activo en navbar */
+.navbar .nav-link.active {
+  color: var(--cedhi-cyan) !important;
+  border-bottom: 2px solid var(--cedhi-cyan);
+}
+
+/* ── Sidebar ── */
+.layout-side-section,
+.desk-sidebar {
+  background: var(--cedhi-bg) !important;
+  border-right: 1px solid var(--cedhi-border) !important;
+}
+.sidebar-item.selected > .standard-sidebar-item,
+.sidebar-item:hover > .standard-sidebar-item {
+  background: #EFF4FF !important;
+  color: var(--cedhi-navy) !important;
+  border-left: 3px solid var(--cedhi-navy) !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+.sidebar-item .standard-sidebar-item {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ── Botón primario ── */
+.btn-primary {
+  background: var(--cedhi-navy) !important;
+  border-color: var(--cedhi-navy) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+.btn-primary:hover {
+  background: var(--cedhi-navy-light) !important;
+  border-color: var(--cedhi-navy-light) !important;
+}
+
+/* ── Botón secundario ── */
+.btn-default, .btn-secondary {
+  border-color: var(--cedhi-border) !important;
+  color: var(--cedhi-navy) !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+/* ── Number Cards (KPIs RF-C04) ── */
+.number-card-wrapper {
+  border-radius: 12px !important;
+  border: 1px solid var(--cedhi-border) !important;
+  background: var(--cedhi-bg) !important;
+  overflow: hidden;
+}
+.number-card-wrapper .card-body {
+  padding: 14px 16px !important;
+}
+.number-card .card-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cedhi-text-muted) !important;
+}
+.number-card .number {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+}
+
+/* ── Alertas / badges ── */
+.indicator-pill.red, .badge-danger {
+  background: rgba(217,32,42,0.12) !important;
+  color: var(--cedhi-red) !important;
+}
+.indicator-pill.green, .badge-success {
+  background: rgba(45,174,106,0.12) !important;
+  color: var(--cedhi-green) !important;
+}
+.indicator-pill.yellow, .badge-warning {
+  background: rgba(245,195,0,0.15) !important;
+  color: #9A7A00 !important;
+}
+.indicator-pill.blue {
+  background: rgba(0,174,204,0.12) !important;
+  color: var(--cedhi-cyan) !important;
+}
+
+/* ── Encabezado de página ── */
+.page-head {
+  background: var(--cedhi-white, #fff) !important;
+  border-bottom: 1px solid var(--cedhi-border) !important;
+}
+.page-title .title-text {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+}
+
+/* ── Tarjetas / Cards ── */
+.widget.shortcut-widget-box,
+.widget.links-widget-box,
+.desk-card {
+  border-radius: 12px !important;
+  border: 1px solid var(--cedhi-border) !important;
+  background: #fff !important;
+}
+.widget-head .widget-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+  font-size: 13px !important;
+}
+
+/* ── Links de acceso rápido (shortcuts) ── */
+.shortcut-widget-box .shortcut-widget-link {
+  color: var(--cedhi-navy) !important;
+  font-weight: 600 !important;
+}
+.shortcut-widget-box:hover {
+  border-color: var(--cedhi-cyan) !important;
+  background: #F0FAFD !important;
+}
+
+/* ── Tablas ── */
+.datatable .dt-header {
+  background: var(--cedhi-navy) !important;
+  color: #fff !important;
+}
+.datatable .dt-header .dt-cell--header .dt-cell__content {
+  font-weight: 700 !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.datatable .dt-row:hover .dt-cell {
+  background: #EFF4FF !important;
+}
+
+/* ── Login page ── */
+.page-card.login-content {
+  border-radius: 18px !important;
+  border: 1px solid var(--cedhi-border) !important;
+  box-shadow: 0 8px 32px rgba(26,47,110,0.10) !important;
+}
+.login-content .btn-login-option {
+  border-radius: 10px !important;
+  border: 1.5px solid var(--cedhi-border) !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+}
+.login-content .btn-login-option:hover {
+  border-color: var(--cedhi-navy) !important;
+}
+
+/* ── Formularios ── */
+.form-control, .frappe-control input,
+.frappe-control select, .frappe-control textarea {
+  border-radius: 8px !important;
+  border-color: var(--cedhi-border) !important;
+  font-family: 'Nunito', sans-serif !important;
+}
+.form-control:focus {
+  border-color: var(--cedhi-navy) !important;
+  box-shadow: 0 0 0 3px rgba(26,47,110,0.12) !important;
+}
+
+/* ── Scroll bar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--cedhi-bg); }
+::-webkit-scrollbar-thumb {
+  background: var(--cedhi-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cedhi-navy-light);
 }

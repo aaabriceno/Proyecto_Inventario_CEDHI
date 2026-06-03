@@ -129,6 +129,19 @@ def create_quick_movement(articulo, tipo_movimiento, cantidad, motivo):
     return doc.name
 
 
+def force_spanish_language(*args, **kwargs):
+    """Enforce Spanish ('es') language on all requests and background jobs."""
+    import frappe
+    if hasattr(frappe.local, "lang"):
+        frappe.local.lang = "es"
+
+
+def enforce_user_language(doc, method=None):
+    """Ensure user language is forced to Spanish ('es')."""
+    doc.language = "es"
+
+
+
 
 
 

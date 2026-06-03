@@ -30,6 +30,7 @@ def setup_inventory_mvp():
 	results["Workspace"] = create_inventory_workspace()
 	results["Child Workspaces"] = create_child_workspaces()
 	results["Hide Workspaces"] = hide_unwanted_workspaces()
+	enforce_system_language()
 	frappe.db.commit()
 	frappe.clear_cache()
 	return results
@@ -2721,5 +2722,24 @@ def hide_unwanted_workspaces():
 	frappe.db.commit()
 	frappe.clear_cache()
 	return {"hidden_workspaces": workspaces_to_hide}
+
+
+def enforce_system_language():
+	"""Enforce system-wide language to Spanish ('es')."""
+	import frappe
+	from frappe.translate import set_default_language
+	
+	# Update System Settings
+	system_settings = frappe.get_doc("System Settings")
+	system_settings.language = "es"
+	system_settings.save(ignore_permissions=True)
+	
+	# Ensure the global default is set in the DB
+	set_default_language("es")
+	
+	# Update all users to Spanish
+	frappe.db.sql("UPDATE `tabUser` SET language = 'es'")
+	frappe.clear_cache()
+
 
 
