@@ -64,65 +64,153 @@ bench --site inventario.local install-app erpnext
 bench --site inventario.local install-app inventario_cedhi
 ```
 
-## Instalacion por medio de Dockerfile
+## Instalacion con Docker en Windows + WSL
 
-Construimos y levantamos el entorno:
+Esta opcion es la recomendada para integrantes que usan Windows o macOS y no quieren instalar manualmente Python, Node, Redis, MariaDB, Bench, Frappe y ERPNext.
 
+### Requisitos
+
+En Windows:
+
+- Docker Desktop instalado.
+- WSL2 habilitado.
+- Una distribucion Linux en WSL, por ejemplo Ubuntu.
+
+En WSL/Ubuntu:
+
+- Git instalado.
+- Acceso al repositorio del proyecto.
+
+No descargar el proyecto como ZIP. Se recomienda clonar con Git dentro de WSL para poder usar `git pull`, ramas y commits correctamente.
+
+### 1. Clonar el repositorio dentro de WSL
+
+Abrir Ubuntu/WSL y ejecutar:
+
+```bash
+mkdir -p ~/proyectos
+cd ~/proyectos
+git clone -b develop https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git
+cd Proyecto_Inventario_CEDHI
 ```
+
+Si se usa SSH:
+
+```bash
+git clone -b develop git@github.com:aaabriceno/Proyecto_Inventario_CEDHI.git
+cd Proyecto_Inventario_CEDHI
+```
+
+### 2. Preparar variables locales de Docker
+
+Entrar a la carpeta Docker y crear el `.env` local:
+
+```bash
 cd ./docker_setup/
 cp .env.example .env
+```
+
+El archivo `.env` no se sube a GitHub. Cada integrante tiene el suyo. Si se cambia `DB_PASSWORD`, se debe usar el mismo valor al crear el sitio.
+
+### 3. Construir y levantar los contenedores
+
+```bash
 docker compose up -d --build
 ```
 
-Instalamos la base de datos, erpnext e inventario_cedhi:
+Esto levanta los servicios de Frappe/ERPNext, MariaDB, Redis, workers, scheduler, websocket y frontend.
 
-```
+### 4. Crear el sitio e instalar las apps
+
+Crear el sitio:
+
+```bash
 docker compose exec backend bench new-site inventario.localhost --mariadb-root-password admin --admin-password admin
+```
+
+Instalar ERPNext:
+
+```bash
 docker compose exec backend bench --site inventario.localhost install-app erpnext
+```
+
+Instalar la app del proyecto:
+
+```bash
 docker compose exec backend bench --site inventario.localhost install-app inventario_cedhi
 ```
 
 Si cambiaste `DB_PASSWORD` en `.env`, usa ese mismo valor en `--mariadb-root-password`.
 
-Para evitar problemas de enrutamiento establecemos:
+### 5. Ejecutar la configuracion inicial del MVP
 
+```bash
+docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
 ```
+
+Este comando crea/configura DocTypes, campos, roles, permisos, reportes, workspace y usuarios iniciales de prueba.
+
+### 6. Definir el sitio por defecto y limpiar cache
+
+```bash
 docker compose exec backend bench use inventario.localhost
-docker compose exec backend bench clear-cache
-```
-
-Luego en tu navegador ingresa a "http://inventario.localhost:8080"
-
-### Flujo de trabajo para hacer pull y push
-
-Para no tener que reconstruir toda la imagen cuando alguien haga un cambio en el repositorio solo deben de ejecutar el siguiente comando:
-
-```
-docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull origin develop"
-```
-
-Si se crearon nuevas tablas en la base de datos(nuevos docTypes), debes de sincronizar tu base de datos local.
-
-```
-docker compose exec backend bench --site inventario.localhost migrate
-```
-
-Para limpiar cache para ver los cambios web:
-
-```
 docker compose exec backend bench --site inventario.localhost clear-cache
 ```
 
-En caso de realizar algun nuevo cambio, pueden entrar al bash del contenedor:
+### 7. Abrir el sistema
 
+Desde el navegador de Windows o del sistema anfitrion:
+
+```text
+http://inventario.localhost:8080
 ```
+
+### Actualizar cambios del proyecto dentro de Docker
+
+Cuando se suban cambios a `develop`, actualizar el repo local:
+
+```bash
+cd ~/proyectos/Proyecto_Inventario_CEDHI
+git pull origin develop
+```
+
+Actualizar tambien la app dentro del contenedor:
+
+```bash
+docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull origin develop"
+```
+
+Si se crearon nuevas tablas, campos, reportes o cambios de modelo, sincronizar la base local:
+
+```bash
+docker compose exec backend bench --site inventario.localhost migrate
+docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
+```
+
+Limpiar cache:
+
+```bash
+docker compose exec backend bench --site inventario.localhost clear-cache
+```
+
+### Trabajar en una rama propia
+
+Si un integrante va a programar cambios, debe crear una rama:
+
+```bash
+git checkout -b feature/nombre-del-cambio
+```
+
+Tambien puede entrar al contenedor si necesita revisar el bench:
+
+```bash
 docker compose exec -it backend bash
 cd apps/inventario_cedhi
 ```
 
-Ejemplo:
+Ejemplo de commit desde el repo local:
 
-```
+```bash
 git add .
 git commit -m "Agregado modulo de reportes"
 git push origin mi-rama
