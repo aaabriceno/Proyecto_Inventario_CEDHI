@@ -90,6 +90,11 @@
         window.setTimeout(ensureBackButton, 100);
         window.setTimeout(ensureBackButton, 350);
         window.setTimeout(ensureBackButton, 900);
+        if (window.cedhi_apply_role_theme) {
+            window.setTimeout(window.cedhi_apply_role_theme, 100);
+            window.setTimeout(window.cedhi_apply_role_theme, 350);
+            window.setTimeout(window.cedhi_apply_role_theme, 900);
+        }
     }
 
     function hookHistoryMethod(methodName) {
@@ -143,3 +148,40 @@
         window.cedhi_mobile_navigation.interval = window.setInterval(ensureBackButton, 800);
     }
 })();
+
+// Role themed accent coloring
+function cedhi_apply_role_theme() {
+    var roles = (window.frappe && frappe.user_roles) || [];
+
+    // Mapa de rol → color de acento en sidebar
+    var roleColors = {
+        'Admin Cocina':                   '#2DAE6A',  // verde
+        'Admin TI':                        '#00AECC',  // cian
+        'Admin General':                   '#F5C300',  // amarillo
+        'Revisor':                         '#1A2F6E',  // navy
+        'Reportante':                      '#5A6A8E',  // gris
+        'SuperAdministrador Inventario':   '#D9202A',  // rojo
+    };
+
+    var matchedRole = Object.keys(roleColors).find(function(r) {
+        return roles.includes(r);
+    });
+
+    if (matchedRole) {
+        var color = roleColors[matchedRole];
+        // Pintar indicador activo del sidebar con el color del rol
+        document.querySelectorAll('.sidebar-item.selected > .standard-sidebar-item')
+            .forEach(function(el) {
+                el.style.setProperty('border-left-color', color, 'important');
+            });
+    }
+}
+
+window.cedhi_apply_role_theme = cedhi_apply_role_theme;
+
+if (window.frappe && typeof frappe.after_ajax === "function") {
+    frappe.after_ajax(function() {
+        cedhi_apply_role_theme();
+    });
+}
+

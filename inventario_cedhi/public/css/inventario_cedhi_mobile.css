@@ -1,140 +1,900 @@
 /*
-   Inventario CEDHI - mobile and table helpers.
-   This file intentionally avoids global form-control styles.
+==========================================================================
+   Sistema de Gestión de Inventario CEDHI - Premium Modern Theme
+   Author: Antigravity Team
+   Platform: Frappe v15 / ERPNext (Desktop & Mobile)
+==========================================================================
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap');
+
+/* ==========================================================================
+   0. Custom Variables & Design Tokens
+   ========================================================================== */
 :root {
-    --cedhi-border: #e5e7eb;
+    /* Theme Colors */
+    --cedhi-primary: #6366f1;
+    --cedhi-primary-hover: #4f46e5;
+    --cedhi-secondary: #0ea5e9;
+    --cedhi-secondary-hover: #0284c7;
+    --cedhi-success: #10b981;
+    --cedhi-success-hover: #059669;
+    --cedhi-warning: #f59e0b;
+    --cedhi-warning-hover: #d97706;
+    --cedhi-danger: #ef4444;
+    --cedhi-danger-hover: #dc2626;
+
+    /* Backgrounds & Surfaces (Light) */
+    --cedhi-bg: #f8fafc;
+    --cedhi-surface: #ffffff;
+    --cedhi-border: rgba(226, 232, 240, 0.8);
+    --cedhi-border-focus: rgba(99, 102, 241, 0.5);
+    --cedhi-text-main: #0f172a;
+    --cedhi-text-muted: #64748b;
+    
+    /* Shadows & Glows */
+    --cedhi-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.03);
+    --cedhi-shadow-md: 0 4px 20px rgba(15, 23, 42, 0.05);
+    --cedhi-shadow-lg: 0 12px 30px rgba(99, 102, 241, 0.06);
+    --cedhi-shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    --cedhi-shadow-card-hover: 0 20px 35px -5px rgba(99, 102, 241, 0.08), 0 10px 15px -6px rgba(99, 102, 241, 0.03);
+
+    /* Animation Curve */
+    --cedhi-transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark Mode Overrides */
+.dark, [data-theme="dark"] {
+    --cedhi-bg: #0b0f19;
+    --cedhi-surface: #131c2e;
+    --cedhi-border: rgba(51, 65, 85, 0.4);
+    --cedhi-border-focus: rgba(99, 102, 241, 0.6);
+    --cedhi-text-main: #f1f5f9;
+    --cedhi-text-muted: #94a3b8;
+    --cedhi-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --cedhi-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --cedhi-shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.4);
+    --cedhi-shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    --cedhi-shadow-card-hover: 0 20px 35px -5px rgba(99, 102, 241, 0.12);
+}
+
+/* ==========================================================================
+   1. Typography & Global Elements
+   ========================================================================== */
+body, html, 
+.frappe-control, .form-control, .btn, .list-row, .page-title, 
+h1, h2, h3, h4, h5, h6, .sidebar-item-label, .widget-title, .title-text,
+.grid-heading-row, .modal-title, .report-name, .indicator-pill {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+body {
+    background-color: var(--cedhi-bg) !important;
+    color: var(--cedhi-text-main) !important;
+    transition: background-color 0.3s ease;
+}
+
+/* Smooth Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.4);
+}
+
+/* ==========================================================================
+   2. Custom Header Banners (Glassmorphism & Gradients)
+   ========================================================================== */
 .hero-banner {
-    padding: 6px 0 12px;
-}
-
-.cedhi-mobile-back {
-    display: none;
+    position: relative;
+    padding: 32px 40px;
+    border-radius: 20px;
+    color: #ffffff !important;
+    margin-bottom: 30px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .hero-banner h1 {
-    font-size: 28px;
-    line-height: 1.15;
-    letter-spacing: 0;
-    margin: 0 0 6px;
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    letter-spacing: -0.02em;
 }
 
 .hero-banner p {
     font-size: 15px;
-    line-height: 1.45;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.9) !important;
     margin: 0;
+    max-width: 600px;
+    line-height: 1.5;
 }
 
-.standard-sidebar,
-.layout-side-section,
-.desk-sidebar,
-.list-sidebar {
-    overflow-y: auto;
+/* Glowing Decorative Bubbles */
+.hero-banner::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -20px;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
-.standard-sidebar .sidebar-item-label,
-.desk-sidebar .sidebar-item-label,
-.list-sidebar .sidebar-item-label {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
+.hero-banner::after {
+    content: "";
+    position: absolute;
+    bottom: -60px;
+    left: -30px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
-.list-view-container,
-.frappe-list,
-.report-wrapper,
-.query-report,
-.result,
-.datatable,
-.dt-scrollable,
-.page-form,
-.list-filters {
-    max-width: 100%;
-    overflow-x: auto;
+/* Specific Gradient Styles */
+.main-banner {
+    background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #06b6d4 100%) !important;
+    box-shadow: 0 12px 30px rgba(79, 70, 229, 0.2) !important;
 }
 
-.dt-row,
-.dt-header,
+.operations-banner {
+    background: linear-gradient(135deg, #0d9488 0%, #10b981 50%, #06b6d4 100%) !important;
+    box-shadow: 0 12px 30px rgba(13, 148, 136, 0.2) !important;
+}
+
+.reports-banner {
+    background: linear-gradient(135deg, #e11d48 0%, #c084fc 60%, #8b5cf6 100%) !important;
+    box-shadow: 0 12px 30px rgba(225, 29, 72, 0.2) !important;
+}
+
+.configuration-banner {
+    background: linear-gradient(135deg, #475569 0%, #334155 50%, #1e293b 100%) !important;
+    box-shadow: 0 12px 30px rgba(71, 85, 105, 0.2) !important;
+}
+
+/* ==========================================================================
+   3. Glassmorphic Navigation Bar (Top Navbar)
+   ========================================================================== */
+.navbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px) saturate(180%);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.02) !important;
+    padding: 8px 16px !important;
+}
+
+.dark .navbar {
+    background: rgba(19, 28, 46, 0.8) !important;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5) !important;
+    box-shadow: 0 1px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Navbar Search Input */
+.navbar .search-bar input, .navbar-search input {
+    border-radius: 20px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    background-color: rgba(241, 245, 249, 0.6) !important;
+    padding: 6px 14px 6px 36px !important;
+    font-size: 13px !important;
+    transition: var(--cedhi-transition) !important;
+}
+
+.dark .navbar .search-bar input, .dark .navbar-search input {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+.navbar .search-bar input:focus, .navbar-search input:focus {
+    background-color: var(--cedhi-surface) !important;
+    border-color: var(--cedhi-primary) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+    width: 220px !important;
+}
+
+/* User Profile Image glow */
+.navbar-user-image {
+    border: 2px solid transparent !important;
+    transition: var(--cedhi-transition);
+}
+.navbar-user-image:hover {
+    border-color: var(--cedhi-primary) !important;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+/* ==========================================================================
+   4. Left Sidebar (Premium Nested Style)
+   ========================================================================== */
+.layout-side-section, .standard-sidebar, .desk-sidebar, .list-sidebar {
+    background-color: transparent !important;
+    border-right: none !important;
+    padding-right: 12px !important;
+}
+
+/* Sidebar Item Boxes */
+.standard-sidebar .sidebar-item-container, 
+.desk-sidebar .sidebar-item-container {
+    border-radius: 10px !important;
+    margin-bottom: 4px !important;
+    border: 1px solid transparent !important;
+    transition: var(--cedhi-transition) !important;
+    padding: 6px 12px !important;
+}
+
+.standard-sidebar .sidebar-item-container:hover, 
+.desk-sidebar .sidebar-item-container:hover {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+    transform: translateX(4px);
+}
+
+/* Sidebar Active Indicator */
+.standard-sidebar .sidebar-item-container.active, 
+.desk-sidebar .sidebar-item-container.active {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.01) 100%) !important;
+    border-left: 4px solid var(--cedhi-primary) !important;
+    font-weight: 600 !important;
+}
+
+.sidebar-item-label {
+    font-size: 14px !important;
+    color: var(--cedhi-text-muted) !important;
+}
+
+.standard-sidebar .sidebar-item-container.active .sidebar-item-label,
+.desk-sidebar .sidebar-item-container.active .sidebar-item-label {
+    color: var(--cedhi-primary) !important;
+}
+
+/* Sidebar Headers/Breaks */
+.standard-sidebar .sidebar-group-title,
+.desk-sidebar .sidebar-group-title {
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    font-weight: 700 !important;
+    color: var(--cedhi-primary) !important;
+    padding-left: 12px !important;
+    margin-top: 18px !important;
+    margin-bottom: 8px !important;
+    opacity: 0.8;
+}
+
+/* ==========================================================================
+   5. Dashboard Widgets & Cards
+   ========================================================================== */
+.widget, .shortcut-widget-box, .number-card-widget, .chart-widget-box {
+    border-radius: 16px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    box-shadow: var(--cedhi-shadow-card) !important;
+    transition: var(--cedhi-transition) !important;
+    background-color: var(--cedhi-surface) !important;
+}
+
+.widget:hover, .shortcut-widget-box:hover, .number-card-widget:hover, .chart-widget-box:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--cedhi-shadow-card-hover) !important;
+    border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Number Cards Customization */
+.number-card-widget {
+    background: linear-gradient(135deg, var(--cedhi-surface) 0%, var(--cedhi-bg) 100%) !important;
+    padding: 24px 20px !important;
+    border-left: 5px solid var(--cedhi-primary) !important;
+}
+
+/* Color Coding for Number Cards */
+.number-card-widget[data-card-name*="Activo"] {
+    border-left-color: var(--cedhi-success) !important;
+}
+.number-card-widget[data-card-name*="Reparaci"] {
+    border-left-color: var(--cedhi-warning) !important;
+}
+.number-card-widget[data-card-name*="Baja"] {
+    border-left-color: var(--cedhi-danger) !important;
+}
+.number-card-widget[data-card-name*="Alerta"] {
+    border-left-color: var(--cedhi-danger) !important;
+}
+
+.number-card-widget .card-title {
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: var(--cedhi-text-muted) !important;
+    font-weight: 600 !important;
+}
+
+.number-card-widget .card-number {
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    color: var(--cedhi-text-main) !important;
+    margin-top: 6px !important;
+    letter-spacing: -0.01em;
+}
+
+/* Shortcut Boxes */
+.shortcut-widget-box {
+    border-left: 4px solid var(--cedhi-secondary) !important;
+    padding: 18px 24px !important;
+}
+
+.shortcut-widget-box:hover {
+    border-left-color: var(--cedhi-primary) !important;
+}
+
+.shortcut-widget-box .indicator-pill {
+    font-size: 11px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    padding: 3px 10px !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    color: var(--cedhi-primary) !important;
+}
+
+/* Charts Widget */
+.chart-widget-box {
+    padding: 24px !important;
+}
+.chart-widget-box .widget-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: var(--cedhi-text-main) !important;
+}
+
+/* ==========================================================================
+   6. Clean Forms & Input Controls
+   ========================================================================== */
+.form-section {
+    background-color: var(--cedhi-surface) !important;
+    border-radius: 16px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    padding: 24px !important;
+    margin-bottom: 20px !important;
+    box-shadow: var(--cedhi-shadow-sm) !important;
+}
+
+.form-section .section-head {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: var(--cedhi-primary) !important;
+    margin-bottom: 20px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid var(--cedhi-border) !important;
+}
+
+/* Inputs & Form Controls Styling */
+input.form-control, select.form-control, textarea.form-control, 
+.frappe-control input, .frappe-control select, .frappe-control textarea {
+    border-radius: 8px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    background-color: var(--cedhi-bg) !important;
+    color: var(--cedhi-text-main) !important;
+    transition: var(--cedhi-transition) !important;
+    box-shadow: none !important;
+}
+
+.dark input.form-control, .dark select.form-control, .dark textarea.form-control,
+.dark .frappe-control input, .dark .frappe-control select, .dark .frappe-control textarea {
+    background-color: rgba(11, 15, 25, 0.5) !important;
+    border-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+input.form-control:focus, select.form-control:focus, textarea.form-control:focus,
+.frappe-control input:focus, .frappe-control select:focus, .frappe-control textarea:focus {
+    background-color: var(--cedhi-surface) !important;
+    border-color: var(--cedhi-primary) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+.frappe-control .label, .form-grid .grid-heading-row {
+    font-weight: 500 !important;
+    color: var(--cedhi-text-muted) !important;
+    font-size: 12px !important;
+    margin-bottom: 6px !important;
+}
+
+/* ==========================================================================
+   7. Beautiful List Views & Tables
+   ========================================================================== */
+.list-row-container {
+    margin-bottom: 8px !important;
+}
+
 .list-row {
-    min-width: max-content;
+    border-radius: 12px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    background-color: var(--cedhi-surface) !important;
+    box-shadow: var(--cedhi-shadow-sm) !important;
+    transition: var(--cedhi-transition) !important;
+    padding: 14px 18px !important;
 }
 
-@media (max-width: 768px) {
-    .cedhi-mobile-back {
-        position: fixed;
-        left: 12px;
-        bottom: 14px;
-        z-index: 1050;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 34px;
-        padding: 7px 12px;
-        border: 1px solid var(--cedhi-border);
-        border-radius: 999px;
-        background: #ffffff;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
-        font-weight: 600;
+.list-row:hover {
+    background-color: var(--cedhi-surface) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    box-shadow: var(--cedhi-shadow-md) !important;
+    transform: translateY(-2px);
+}
+
+.list-row.level-danger, .list-row-container[data-level="danger"] .list-row {
+    border-left: 4px solid var(--cedhi-danger) !important;
+}
+
+.list-row.level-warning, .list-row-container[data-level="warning"] .list-row {
+    border-left: 4px solid var(--cedhi-warning) !important;
+}
+
+.list-row.level-success, .list-row-container[data-level="success"] .list-row {
+    border-left: 4px solid var(--cedhi-success) !important;
+}
+
+/* Filter area custom designs */
+.list-filters, .filter-section {
+    background-color: var(--cedhi-surface) !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    padding: 12px 16px !important;
+    margin-bottom: 16px !important;
+}
+
+/* Status Pills (Indicator Badges) */
+.indicator-pill {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 4px 12px !important;
+    border-radius: 12px !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+/* Green Status Capsule */
+.indicator-pill.green, .indicator-pill.success, [data-status="Activo"] .indicator-pill, [data-status="Disponible"] .indicator-pill {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    color: #059669 !important;
+}
+
+/* Orange/Yellow Status Capsule */
+.indicator-pill.orange, .indicator-pill.warning, [data-status="Reparacion"] .indicator-pill, [data-status="Bajo Stock"] .indicator-pill {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+    color: #d97706 !important;
+}
+
+/* Red Status Capsule */
+.indicator-pill.red, .indicator-pill.danger, [data-status="Baja"] .indicator-pill, [data-status="Incidencia"] .indicator-pill {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #dc2626 !important;
+}
+
+/* Blue/Grey Status Capsule */
+.indicator-pill.blue, .indicator-pill.info, [data-status="Borrador"] .indicator-pill {
+    background-color: rgba(99, 102, 241, 0.12) !important;
+    color: var(--cedhi-primary) !important;
+}
+
+/* ==========================================================================
+   8. Premium Buttons
+   ========================================================================== */
+.btn {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 8px 16px !important;
+    transition: var(--cedhi-transition) !important;
+    font-size: 13px !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--cedhi-primary) 0%, #4f46e5 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25) !important;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35) !important;
+    transform: translateY(-1px);
+}
+
+.btn-secondary, .btn-default, .btn-xs, .btn-sm {
+    border: 1px solid var(--cedhi-border) !important;
+    background-color: var(--cedhi-surface) !important;
+    color: var(--cedhi-text-main) !important;
+}
+
+.btn-secondary:hover, .btn-default:hover {
+    background-color: var(--cedhi-bg) !important;
+    border-color: var(--cedhi-text-muted) !important;
+}
+
+.dark .btn-secondary, .dark .btn-default {
+    border-color: rgba(51, 65, 85, 0.6) !important;
+    background-color: #162238 !important;
+}
+
+.dark .btn-secondary:hover, .dark .btn-default:hover {
+    background-color: #1b2a47 !important;
+}
+
+/* ==========================================================================
+   9. Modals & Dialogs
+   ========================================================================== */
+.modal-content {
+    border-radius: 20px !important;
+    border: 1px solid var(--cedhi-border) !important;
+    background-color: var(--cedhi-surface) !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15) !important;
+    overflow: hidden;
+}
+
+.dark .modal-content {
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--cedhi-border) !important;
+    padding: 20px 24px !important;
+    background-color: var(--cedhi-surface) !important;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--cedhi-border) !important;
+    padding: 16px 24px !important;
+    background-color: var(--cedhi-surface) !important;
+}
+
+.modal-backdrop.show {
+    opacity: 0.6 !important;
+    backdrop-filter: blur(4px);
+}
+
+/* ==========================================================================
+   10. Mobile Responsive Enhancements
+   ========================================================================== */
+.cedhi-mobile-back {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    /* Main Layout */
+    .hero-banner {
+        padding: 24px 28px;
+        margin-bottom: 20px;
     }
 
     .hero-banner h1 {
-        font-size: 24px;
+        font-size: 26px;
     }
 
     .hero-banner p {
         font-size: 14px;
     }
 
-    .page-content,
-    .layout-main-section,
-    .layout-main-section-wrapper {
-        min-width: 0;
-        max-width: 100%;
-    }
-
-    .layout-side-section,
-    .standard-sidebar {
-        max-height: 42vh;
-    }
-
+    /* Scrollable Side Menu on Mobile */
     .layout-side-section {
-        margin-bottom: 12px;
+        max-height: 40vh;
+        margin-bottom: 20px;
         border-bottom: 1px solid var(--cedhi-border);
-        padding-bottom: 8px;
+        padding-bottom: 16px;
+        overflow-y: auto;
     }
 
-    .list-view-container,
-    .frappe-list,
-    .report-wrapper,
-    .query-report,
-    .result,
-    .datatable,
-    .dt-scrollable,
-    .page-form,
-    .list-filters {
+    .standard-sidebar {
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+
+    /* Hide redundant form decorations on mobile */
+    .form-sidebar, .form-assignments, .form-attachments, .form-tags, 
+    .form-shared, .liked-by, .followed-by {
+        display: none !important;
+    }
+
+    /* Smooth Scroll Touch */
+    .list-view-container, .frappe-list, .report-wrapper, .query-report, 
+    .result, .datatable, .dt-scrollable, .page-form, .list-filters {
         -webkit-overflow-scrolling: touch;
-    }
-
-    .form-sidebar,
-    .form-assignments,
-    .form-attachments,
-    .form-tags,
-    .form-shared,
-    .liked-by,
-    .followed-by {
-        display: none;
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+    /* Form Sections padding adjustments */
+    .form-section {
+        padding: 16px !important;
+        border-radius: 12px !important;
+    }
+
+    /* Adjust grids: make number cards 2 columns instead of squishing them */
+    .sections-wrapper .section-box .row > div {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    /* Banners on Small Mobile */
     .hero-banner h1 {
         font-size: 22px;
     }
 
     .hero-banner p {
         font-size: 13px;
+        line-height: 1.4;
     }
+
+    /* Mobile Back Button */
+    .cedhi-mobile-back {
+        position: fixed;
+        left: 16px;
+        bottom: 16px;
+        z-index: 2147483000;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 8px 16px;
+        border: 1px solid var(--cedhi-border) !important;
+        border-radius: 999px !important;
+        background: var(--cedhi-surface) !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+        font-weight: 600 !important;
+        color: var(--cedhi-text-main) !important;
+        transition: var(--cedhi-transition) !important;
+    }
+
+    .cedhi-mobile-back:active {
+        transform: scale(0.95);
+        background-color: var(--cedhi-bg) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-banner {
+        padding: 16px 20px;
+    }
+
+    .hero-banner h1 {
+        font-size: 20px;
+    }
+    
+    .sections-wrapper .section-box .row > div {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* ── CUSTOM THEME OVERRIDES ── */
+:root {
+  --cedhi-navy:       #1A2F6E;
+  --cedhi-navy-dark:  #0F1D4A;
+  --cedhi-navy-light: #2A4090;
+  --cedhi-red:        #D9202A;
+  --cedhi-yellow:     #F5C300;
+  --cedhi-green:      #2DAE6A;
+  --cedhi-cyan:       #00AECC;
+  --cedhi-bg:         #F4F6FA;
+  --cedhi-border:     #D0D8EE;
+  --cedhi-text:       #1A2F6E;
+  --cedhi-text-muted: #5A6A8E;
+}
+
+/* ── Tipografía global ── */
+body, .frappe-app {
+  font-family: 'Nunito', sans-serif !important;
+}
+.navbar-brand, h1, h2, h3, h4,
+.page-title, .workspace-title,
+.widget-title, .number-card .card-title {
+  font-family: 'Outfit', sans-serif !important;
+}
+
+/* ── Navbar / Topbar ── */
+.navbar {
+  background: var(--cedhi-navy) !important;
+  border-bottom: none !important;
+  box-shadow: 0 2px 12px rgba(26,47,110,0.18) !important;
+}
+.navbar .navbar-brand img {
+  filter: brightness(0) invert(1);
+}
+.navbar .nav-link,
+.navbar .navbar-brand,
+.navbar-nav .nav-link {
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 600;
+}
+.navbar .nav-link:hover {
+  color: #fff !important;
+}
+/* Indicador activo en navbar */
+.navbar .nav-link.active {
+  color: var(--cedhi-cyan) !important;
+  border-bottom: 2px solid var(--cedhi-cyan);
+}
+
+/* ── Sidebar ── */
+.layout-side-section,
+.desk-sidebar {
+  background: var(--cedhi-bg) !important;
+  border-right: 1px solid var(--cedhi-border) !important;
+}
+.sidebar-item.selected > .standard-sidebar-item,
+.sidebar-item:hover > .standard-sidebar-item {
+  background: #EFF4FF !important;
+  color: var(--cedhi-navy) !important;
+  border-left: 3px solid var(--cedhi-navy) !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+.sidebar-item .standard-sidebar-item {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ── Botón primario ── */
+.btn-primary {
+  background: var(--cedhi-navy) !important;
+  border-color: var(--cedhi-navy) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+.btn-primary:hover {
+  background: var(--cedhi-navy-light) !important;
+  border-color: var(--cedhi-navy-light) !important;
+}
+
+/* ── Botón secundario ── */
+.btn-default, .btn-secondary {
+  border-color: var(--cedhi-border) !important;
+  color: var(--cedhi-navy) !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+}
+
+/* ── Number Cards (KPIs RF-C04) ── */
+.number-card-wrapper {
+  border-radius: 12px !important;
+  border: 1px solid var(--cedhi-border) !important;
+  background: var(--cedhi-bg) !important;
+  overflow: hidden;
+}
+.number-card-wrapper .card-body {
+  padding: 14px 16px !important;
+}
+.number-card .card-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cedhi-text-muted) !important;
+}
+.number-card .number {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+}
+
+/* ── Alertas / badges ── */
+.indicator-pill.red, .badge-danger {
+  background: rgba(217,32,42,0.12) !important;
+  color: var(--cedhi-red) !important;
+}
+.indicator-pill.green, .badge-success {
+  background: rgba(45,174,106,0.12) !important;
+  color: var(--cedhi-green) !important;
+}
+.indicator-pill.yellow, .badge-warning {
+  background: rgba(245,195,0,0.15) !important;
+  color: #9A7A00 !important;
+}
+.indicator-pill.blue {
+  background: rgba(0,174,204,0.12) !important;
+  color: var(--cedhi-cyan) !important;
+}
+
+/* ── Encabezado de página ── */
+.page-head {
+  background: var(--cedhi-white, #fff) !important;
+  border-bottom: 1px solid var(--cedhi-border) !important;
+}
+.page-title .title-text {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+}
+
+/* ── Tarjetas / Cards ── */
+.widget.shortcut-widget-box,
+.widget.links-widget-box,
+.desk-card {
+  border-radius: 12px !important;
+  border: 1px solid var(--cedhi-border) !important;
+  background: #fff !important;
+}
+.widget-head .widget-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+  font-size: 13px !important;
+}
+
+/* ── Links de acceso rápido (shortcuts) ── */
+.shortcut-widget-box .shortcut-widget-link {
+  color: var(--cedhi-navy) !important;
+  font-weight: 600 !important;
+}
+.shortcut-widget-box:hover {
+  border-color: var(--cedhi-cyan) !important;
+  background: #F0FAFD !important;
+}
+
+/* ── Tablas ── */
+.datatable .dt-header {
+  background: var(--cedhi-navy) !important;
+  color: #fff !important;
+}
+.datatable .dt-header .dt-cell--header .dt-cell__content {
+  font-weight: 700 !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.datatable .dt-row:hover .dt-cell {
+  background: #EFF4FF !important;
+}
+
+/* ── Login page ── */
+.page-card.login-content {
+  border-radius: 18px !important;
+  border: 1px solid var(--cedhi-border) !important;
+  box-shadow: 0 8px 32px rgba(26,47,110,0.10) !important;
+}
+.login-content .btn-login-option {
+  border-radius: 10px !important;
+  border: 1.5px solid var(--cedhi-border) !important;
+  font-weight: 700 !important;
+  color: var(--cedhi-navy) !important;
+}
+.login-content .btn-login-option:hover {
+  border-color: var(--cedhi-navy) !important;
+}
+
+/* ── Formularios ── */
+.form-control, .frappe-control input,
+.frappe-control select, .frappe-control textarea {
+  border-radius: 8px !important;
+  border-color: var(--cedhi-border) !important;
+  font-family: 'Nunito', sans-serif !important;
+}
+.form-control:focus {
+  border-color: var(--cedhi-navy) !important;
+  box-shadow: 0 0 0 3px rgba(26,47,110,0.12) !important;
+}
+
+/* ── Scroll bar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--cedhi-bg); }
+::-webkit-scrollbar-thumb {
+  background: var(--cedhi-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cedhi-navy-light);
 }

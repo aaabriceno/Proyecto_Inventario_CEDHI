@@ -22,7 +22,7 @@ frappe.query_reports["Kardex de Movimientos"] = {
 			"fieldname": "tipo_movimiento",
 			"label": __("Tipo de movimiento"),
 			"fieldtype": "Select",
-			"options": "\nEntrada\nSalida",
+			"options": "\nEntrada\nSalida\nAjuste",
 		},
 		{
 			"fieldname": "fecha_desde",
