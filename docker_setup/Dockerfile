@@ -5,4 +5,4 @@ FROM frappe/erpnext:v16.18.3
 USER frappe
 
 # Esto descarga tu app, corrige los nombres y la instala en Python automáticamente
-RUN bench get-app inventario_cedhi https://github.com/MaycolZx/Proyecto_Inventario_CEDHI
+RUN bench get-app --branch develop inventario_cedhi https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git

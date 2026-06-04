@@ -70,6 +70,7 @@ Construimos y levantamos el entorno:
 
 ```
 cd ./docker_setup/
+cp .env.example .env
 docker compose up -d --build
 ```
 
@@ -80,6 +81,8 @@ docker compose exec backend bench new-site inventario.localhost --mariadb-root-p
 docker compose exec backend bench --site inventario.localhost install-app erpnext
 docker compose exec backend bench --site inventario.localhost install-app inventario_cedhi
 ```
+
+Si cambiaste `DB_PASSWORD` en `.env`, usa ese mismo valor en `--mariadb-root-password`.
 
 Para evitar problemas de enrutamiento establecemos:
 
@@ -95,7 +98,7 @@ Luego en tu navegador ingresa a "http://inventario.localhost:8080"
 Para no tener que reconstruir toda la imagen cuando alguien haga un cambio en el repositorio solo deben de ejecutar el siguiente comando:
 
 ```
-docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull origin main"
+docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull origin develop"
 ```
 
 Si se crearon nuevas tablas en la base de datos(nuevos docTypes), debes de sincronizar tu base de datos local.
