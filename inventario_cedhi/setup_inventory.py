@@ -1387,6 +1387,10 @@ def configure_inventory_role_permissions():
 		"Admin General": _manager_permission(),
 		"System Manager": _full_permission(),
 	}
+	social_login_key_perms = {
+		"SuperAdministrador Inventario": _manager_permission(),
+		"System Manager": _full_permission(),
+	}
 
 	results = {}
 	for doctype, permissions in {
@@ -1398,6 +1402,7 @@ def configure_inventory_role_permissions():
 		"User": user_perms,
 		"Data Import": data_import_perms,
 		"Data Import Log": data_import_perms,
+		"Social Login Key": social_login_key_perms,
 	}.items():
 		if frappe.db.exists("DocType", doctype):
 			results[doctype] = _apply_doctype_permissions(doctype, permissions)
@@ -2740,6 +2745,5 @@ def enforce_system_language():
 	# Update all users to Spanish
 	frappe.db.sql("UPDATE `tabUser` SET language = 'es'")
 	frappe.clear_cache()
-
 
 
