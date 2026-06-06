@@ -344,6 +344,26 @@ bench --site inventario.local execute frappe.utils.password.update_password --ar
 
 No guardar contrasenas reales en codigo ni en documentacion.
 
+## Autenticacion con Google (OAuth) en Desarrollo
+
+Para el MVP, el inicio de sesion con Google esta configurado en un entorno de pruebas en la cuenta de Google Cloud de un integrante del equipo.
+
+**IMPORTANTE:** Nunca subir el `Client ID` ni el `Client Secret` a GitHub. Estas credenciales deben compartirse por un canal privado (WhatsApp, Discord, etc.).
+
+Para que cualquier integrante pueda probar el inicio de sesion con Google en su entorno local (ya sea `http://localhost:8000` nativo o `http://inventario.localhost:8080` en Docker), debe seguir este flujo:
+
+1. **Solicitar acceso de prueba:** El integrante debe enviar su correo de Gmail real al administrador de la cuenta de Google Cloud del proyecto, para que este lo agregue a la lista de **Usuarios de prueba** en la *Pantalla de consentimiento de OAuth*. Si no esta en esta lista, Google mostrara un error de "Acceso bloqueado".
+2. **Obtener las claves:** Recibir por privado el `Client ID` y `Client Secret`.
+3. **Registrar el usuario localmente:** 
+   - Iniciar sesion en Frappe con un administrador local (ej. `superadmin@cedhi.local`).
+   - Ir a la lista de **Usuarios** y cambiar el correo del SuperAdministrador por el correo de Gmail real, o crear un usuario nuevo con ese Gmail.
+4. **Configurar el Social Login:**
+   - Buscar **Social Login Key** en la barra superior de Frappe y configurar el proveedor **Google**.
+   - Marcar **Enable Social Login**.
+   - Pegar el `Client ID` y `Client Secret`.
+   - Guardar (el sistema configurara automaticamente la URL base segun el puerto que esten usando).
+5. **Probar:** Cerrar sesion local y utilizar el boton de Google.
+
 ## Reportes y workspace
 
 Workspace:
