@@ -2736,8 +2736,7 @@ def enforce_system_language():
 	
 	# Update System Settings
 	system_settings = frappe.get_doc("System Settings")
-	system_settings.language = "es"
-	system_settings.save(ignore_permissions=True)
+	system_settings.db_set("language", "es")
 	
 	# Ensure the global default is set in the DB
 	set_default_language("es")
@@ -2745,5 +2744,3 @@ def enforce_system_language():
 	# Update all users to Spanish
 	frappe.db.sql("UPDATE `tabUser` SET language = 'es'")
 	frappe.clear_cache()
-
-
