@@ -167,17 +167,13 @@ http://inventario.localhost:8080
 
 ### Actualizar cambios del proyecto dentro de Docker
 
-Cuando se suban cambios a `develop`, actualizar el repo local:
+Cuando se suban cambios a `develop`, la forma mas segura de actualizar Docker es bajando los cambios en local y reconstruyendo la imagen:
 
 ```bash
 cd ~/proyectos/Proyecto_Inventario_CEDHI
 git pull origin develop
-```
-
-Actualizar tambien la app dentro del contenedor:
-
-```bash
-docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull origin develop"
+cd docker_setup
+docker compose up -d --build
 ```
 
 Si se crearon nuevas tablas, campos, reportes o cambios de modelo, sincronizar la base local:
