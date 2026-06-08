@@ -162,7 +162,7 @@ docker compose exec backend bench --site inventario.localhost clear-cache
 Desde el navegador de Windows o del sistema anfitrion:
 
 ```text
-http://inventario.localhost:8080
+http://localhost:8080
 ```
 
 ### Actualizar cambios del proyecto dentro de Docker
@@ -350,7 +350,7 @@ Para el MVP, el inicio de sesion con Google esta configurado en un entorno de pr
 
 **IMPORTANTE:** Nunca subir el `Client ID` ni el `Client Secret` a GitHub. Estas credenciales deben compartirse por un canal privado (WhatsApp, Discord, etc.).
 
-Para que cualquier integrante pueda probar el inicio de sesion con Google en su entorno local (ya sea `http://localhost:8000` nativo o `http://inventario.localhost:8080` en Docker), debe seguir este flujo:
+Para que cualquier integrante pueda probar el inicio de sesion con Google en su entorno local (ya sea `http://localhost:8000`), debe seguir este flujo:
 
 1. **Solicitar acceso de prueba:** El integrante debe enviar su correo de Gmail real al administrador de la cuenta de Google Cloud del proyecto, para que este lo agregue a la lista de **Usuarios de prueba** en la *Pantalla de consentimiento de OAuth*. Si no esta en esta lista, Google mostrara un error de "Acceso bloqueado".
 2. **Obtener las claves:** Recibir por privado el `Client ID` y `Client Secret`.
