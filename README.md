@@ -176,6 +176,10 @@ cd docker_setup
 docker compose up -d --build
 ```
 
+Si necesitas descargar los últimos cambios de GitHub inmediatamente dentro del contenedor, sin esperar a reconstruir toda la imagen, ejecuta este comando:
+```bash
+docker compose exec backend bash -c "cd apps/inventario_cedhi && git fetch https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git develop && git reset --hard FETCH_HEAD"
+
 Si se crearon nuevas tablas, campos, reportes o cambios de modelo, sincronizar la base local:
 
 ```bash
