@@ -9,3 +9,4 @@ __pycache__
 .ruff_cache/
 .~lock.*#
 docker_setup/.env
+credencialesAppGoogle.txt
