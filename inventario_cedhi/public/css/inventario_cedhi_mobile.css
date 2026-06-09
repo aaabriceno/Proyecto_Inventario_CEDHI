@@ -12,25 +12,24 @@
    0. Custom Variables & Design Tokens
    ========================================================================== */
 :root {
-    /* Theme Colors */
-    --cedhi-primary: #6366f1;
-    --cedhi-primary-hover: #4f46e5;
-    --cedhi-secondary: #0ea5e9;
-    --cedhi-secondary-hover: #0284c7;
-    --cedhi-success: #10b981;
-    --cedhi-success-hover: #059669;
-    --cedhi-warning: #f59e0b;
-    --cedhi-warning-hover: #d97706;
-    --cedhi-danger: #ef4444;
-    --cedhi-danger-hover: #dc2626;
+    /* Theme Colors (Oficiales CEDHI) */
+    --cedhi-primary: #093AB3;
+    --cedhi-primary-hover: #1C2E7A;
+    --cedhi-secondary: #00247f;
+    --cedhi-secondary-hover: #1C2E7A;
+    --cedhi-success: #29BC4D;
+    --cedhi-success-hover: #1e8f3a;
+    --cedhi-warning: #FFCD46;
+    --cedhi-warning-hover: #d9ab31;
+    --cedhi-danger: #F44D29;
+    --cedhi-danger-hover: #c43c1f;
+    --cedhi-cyan: #48E1BE;
 
     /* Backgrounds & Surfaces (Light) */
     --cedhi-bg: #f8fafc;
     --cedhi-surface: #ffffff;
     --cedhi-border: rgba(226, 232, 240, 0.8);
-    --cedhi-border-focus: rgba(99, 102, 241, 0.5);
-    --cedhi-text-main: #0f172a;
-    --cedhi-text-muted: #64748b;
+    --cedhi-border-focus: rgba(9, 58, 179, 0.5);
     
     /* Shadows & Glows */
     --cedhi-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.03);
@@ -68,9 +67,8 @@ h1, h2, h3, h4, h5, h6, .sidebar-item-label, .widget-title, .title-text,
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
+/* Let Frappe handle body colors natively to avoid invisible text in dark mode */
 body {
-    background-color: var(--cedhi-bg) !important;
-    color: var(--cedhi-text-main) !important;
     transition: background-color 0.3s ease;
 }
 
@@ -149,22 +147,22 @@ body {
 
 /* Specific Gradient Styles */
 .main-banner {
-    background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #06b6d4 100%) !important;
-    box-shadow: 0 12px 30px rgba(79, 70, 229, 0.2) !important;
+    background: linear-gradient(135deg, var(--cedhi-primary) 0%, var(--cedhi-secondary) 100%) !important;
+    box-shadow: 0 12px 30px rgba(9, 58, 179, 0.2) !important;
 }
 
 .operations-banner {
-    background: linear-gradient(135deg, #0d9488 0%, #10b981 50%, #06b6d4 100%) !important;
-    box-shadow: 0 12px 30px rgba(13, 148, 136, 0.2) !important;
+    background: linear-gradient(135deg, var(--cedhi-success) 0%, var(--cedhi-cyan) 100%) !important;
+    box-shadow: 0 12px 30px rgba(41, 188, 77, 0.2) !important;
 }
 
 .reports-banner {
-    background: linear-gradient(135deg, #e11d48 0%, #c084fc 60%, #8b5cf6 100%) !important;
-    box-shadow: 0 12px 30px rgba(225, 29, 72, 0.2) !important;
+    background: linear-gradient(135deg, var(--cedhi-danger) 0%, var(--cedhi-warning) 100%) !important;
+    box-shadow: 0 12px 30px rgba(244, 77, 41, 0.2) !important;
 }
 
 .configuration-banner {
-    background: linear-gradient(135deg, #475569 0%, #334155 50%, #1e293b 100%) !important;
+    background: linear-gradient(135deg, #475569 0%, #1e293b 100%) !important;
     box-shadow: 0 12px 30px rgba(71, 85, 105, 0.2) !important;
 }
 
@@ -683,17 +681,15 @@ input.form-control:focus, select.form-control:focus, textarea.form-control:focus
 
 /* ── CUSTOM THEME OVERRIDES ── */
 :root {
-  --cedhi-navy:       #1A2F6E;
-  --cedhi-navy-dark:  #0F1D4A;
-  --cedhi-navy-light: #2A4090;
-  --cedhi-red:        #D9202A;
-  --cedhi-yellow:     #F5C300;
-  --cedhi-green:      #2DAE6A;
-  --cedhi-cyan:       #00AECC;
+  --cedhi-navy:       var(--cedhi-secondary);
+  --cedhi-navy-dark:  #1C2E7A;
+  --cedhi-navy-light: var(--cedhi-primary);
+  --cedhi-red:        var(--cedhi-danger);
+  --cedhi-yellow:     var(--cedhi-warning);
+  --cedhi-green:      var(--cedhi-success);
+  --cedhi-cyan:       var(--cedhi-cyan);
   --cedhi-bg:         #F4F6FA;
   --cedhi-border:     #D0D8EE;
-  --cedhi-text:       #1A2F6E;
-  --cedhi-text-muted: #5A6A8E;
 }
 
 /* ── Tipografía global ── */
@@ -714,6 +710,10 @@ body, .frappe-app {
 }
 .navbar .navbar-brand img {
   filter: brightness(0) invert(1);
+  max-height: 42px !important;
+  transform: scale(1.8);
+  transform-origin: left center;
+  margin-top: -8px;
 }
 .navbar .nav-link,
 .navbar .navbar-brand,

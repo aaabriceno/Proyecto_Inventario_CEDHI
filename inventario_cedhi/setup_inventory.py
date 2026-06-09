@@ -1,7 +1,11 @@
+# pyrefly: ignore [missing-import]
 import frappe
 import json
+# pyrefly: ignore [missing-import]
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+# pyrefly: ignore [missing-import]
 from frappe.utils.password import update_password
+# pyrefly: ignore [missing-import]
 from frappe.utils import cint
 
 
@@ -31,6 +35,7 @@ def setup_inventory_mvp():
 	results["Child Workspaces"] = create_child_workspaces()
 	results["Hide Workspaces"] = hide_unwanted_workspaces()
 	enforce_system_language()
+	apply_cedhi_branding()
 	frappe.db.commit()
 	frappe.clear_cache()
 	return results
@@ -240,10 +245,10 @@ def create_articulo_inventario_doctype():
 			"fieldtype": "Small Text",
 		},
 	]
-	return _create_or_update_core_doctype(doctype_name, fields, "nombre_articulo")
+	return _create_or_update_core_doctype(doctype_name, fields, "nombre_articulo", image_field="fotografia")
 
 
-def _create_or_update_core_doctype(doctype_name, fields, title_field):
+def _create_or_update_core_doctype(doctype_name, fields, title_field, image_field=None):
 	if frappe.db.exists("DocType", doctype_name):
 		doc = frappe.get_doc("DocType", doctype_name)
 		created = False
@@ -2325,6 +2330,22 @@ frappe.ui.form.on('Articulo de Inventario', {
 			"name": "Articulo de Inventario - Navegacion movil Lista",
 			"script": """
 frappe.listview_settings['Articulo de Inventario'] = frappe.listview_settings['Articulo de Inventario'] || {};
+
+// Add colored indicators based on the status
+frappe.listview_settings['Articulo de Inventario'].add_fields = ["estado", "stock_actual", "stock_critico"];
+frappe.listview_settings['Articulo de Inventario'].get_indicator = function(doc) {
+    if (doc.estado === "Activo") {
+        if (doc.stock_actual <= doc.stock_critico) {
+            return [__("Stock Crítico"), "orange", "estado,=,Activo"];
+        }
+        return [__("Activo"), "green", "estado,=,Activo"];
+    } else if (doc.estado === "De baja") {
+        return [__("De baja"), "red", "estado,=,De baja"];
+    } else if (doc.estado === "En reparación") {
+        return [__("En reparación"), "blue", "estado,=,En reparación"];
+    }
+};
+
 frappe.listview_settings['Articulo de Inventario'].onload = function(listview) {
     window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
     
@@ -2473,8 +2494,19 @@ def create_inventory_workspace():
 	name = "Inventario CEDHI"
 
 	# Define Content structure (The Layout)
+	style_block = (
+		"<style>"
+		".main-banner { background: linear-gradient(135deg, #093AB3 0%, #1C2E7A 100%) !important; color: white !important; padding: 32px 40px; border-radius: 20px; box-shadow: 0 12px 30px rgba(9, 58, 179, 0.2) !important; margin-bottom: 20px; }"
+		".main-banner h1 { font-size: 32px; font-weight: 700; margin: 0 0 8px 0; color: white !important; letter-spacing: -0.02em; }"
+		".main-banner p { font-size: 15px; margin: 0; color: rgba(255, 255, 255, 0.9) !important; }"
+		".navbar .navbar-brand img { filter: brightness(0) invert(1); max-height: 42px !important; transform: scale(1.8) !important; transform-origin: left center; margin-top: -8px; }"
+		".navbar { background: #00247f !important; }"
+		"</style>"
+		"<div class='hero-banner main-banner'><h1>Inventario CEDHI</h1><p>Gestión inteligente de activos y suministros.</p></div>"
+	)
+
 	content = [
-		{"id": "hero", "type": "header", "data": {"text": '<div class="hero-banner main-banner"><h1>Inventario CEDHI</h1><p>Gestión inteligente de activos y suministros.</p></div>', "col": 12}},
+		{"id": "hero", "type": "header", "data": {"text": style_block, "col": 12}},
 		# Row 1: KPI Artículos
 		{"id": "mc_total", "type": "number_card", "data": {"number_card_name": "Total Articulos", "col": 3}},
 		{"id": "mc_activos", "type": "number_card", "data": {"number_card_name": "Artículos Activos", "col": 3}},
@@ -2708,7 +2740,11 @@ def create_child_workspaces():
 
 def hide_unwanted_workspaces():
 	"""Hide all public workspaces except 'Inventario CEDHI' and its children to keep the sidebar clean."""
-	allowed_workspaces = ["Inventario CEDHI", "Operaciones", "Reportes", "Configuración"]
+	allowed_workspaces = [
+		"Inventario CEDHI", "Operaciones", "Reportes", "Configuración",
+		# Core Frappe Workspaces (needed for Administrator)
+		"Users", "Settings", "Build", "Integrations", "Tools", "Website", "Home", "Core", "Customization"
+	]
 
 	# Show allowed workspaces
 	for ws_name in allowed_workspaces:
@@ -2731,7 +2767,9 @@ def hide_unwanted_workspaces():
 
 def enforce_system_language():
 	"""Enforce system-wide language to Spanish ('es')."""
+	# pyrefly: ignore [missing-import]
 	import frappe
+	# pyrefly: ignore [missing-import]
 	from frappe.translate import set_default_language
 	
 	# Update System Settings
@@ -2744,3 +2782,145 @@ def enforce_system_language():
 	# Update all users to Spanish
 	frappe.db.sql("UPDATE `tabUser` SET language = 'es'")
 	frappe.clear_cache()
+
+def apply_cedhi_branding():
+	"""Apply CEDHI branding directly to Frappe settings."""
+	logo_principal = "/assets/inventario_cedhi/images/logotipo/CEDHI/Logotipo_principal_version_simplificada.png"
+	favicon_iso = "/assets/inventario_cedhi/images/logotipo/CEDHI/Isotipo_principal.png"
+	splash_logo = "/assets/inventario_cedhi/images/logotipo/CEDHI/Logotipo_principal-02.png"
+	app_name = "Inventario CEDHI"
+
+	# Configurar System Settings
+	sys_settings = frappe.get_doc("System Settings")
+	sys_settings.app_name = app_name
+	sys_settings.app_logo = splash_logo
+	sys_settings.save(ignore_permissions=True)
+
+	# Configurar Website Settings
+	web_settings = frappe.get_doc("Website Settings", "Website Settings")
+	web_settings.app_name = app_name
+	web_settings.app_logo = logo_principal
+	web_settings.favicon = favicon_iso
+	web_settings.brand_html = f'<img src="{logo_principal}" style="max-height: 30px; margin-right: 10px;"> {app_name}'
+	web_settings.disable_signup = 0
+	
+	head_css_js = """
+<!-- CEDHI Login Carousel -->
+<style>
+body[data-path="login"] {
+    background: none !important;
+}
+.cedhi-slider {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: -2;
+}
+.cedhi-slide {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
+}
+.cedhi-slide.active {
+    opacity: 1;
+}
+body[data-path="login"]::before {
+    content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(9, 58, 179, 0.85) 0%, rgba(28, 46, 122, 0.85) 100%);
+    z-index: -1;
+}
+body[data-path="login"] .login-content {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 24px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3) !important;
+    padding: 2.5rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+body[data-path="login"] .page-card-head img {
+    max-height: 120px !important;
+    width: auto !important;
+    margin-bottom: 25px;
+    transform: scale(1.5);
+    transform-origin: center;
+}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    if (window.location.pathname !== '/login') return;
+    
+    const images = [
+        '/assets/inventario_cedhi/images/cedhi_lab_bg.png',
+        '/assets/inventario_cedhi/images/cedhi_kitchen_bg.png',
+        '/assets/inventario_cedhi/images/logotipo/Instituto/Instituto_Horizontal.jpg'
+    ];
+    
+    const slider = document.createElement('div');
+    slider.className = 'cedhi-slider';
+    
+    images.forEach((src, idx) => {
+        const slide = document.createElement('div');
+        slide.className = 'cedhi-slide' + (idx === 0 ? ' active' : '');
+        slide.style.backgroundImage = 'url(' + src + ')';
+        slider.appendChild(slide);
+    });
+    
+    document.body.prepend(slider);
+    
+    let current = 0;
+    setInterval(() => {
+        slider.children[current].classList.remove('active');
+        current = (current + 1) % images.length;
+        slider.children[current].classList.add('active');
+    }, 5000);
+});
+</script>
+<!-- End CEDHI Login Carousel -->
+"""
+	import re
+	old_html = web_settings.head_html or ""
+	old_html = re.sub(r'<style>\s*/\* CEDHI Login Page Customization \*/.*?</style>', '', old_html, flags=re.DOTALL)
+	old_html = re.sub(r'<!-- CEDHI Login Carousel -->.*?<!-- End CEDHI Login Carousel -->', '', old_html, flags=re.DOTALL)
+	web_settings.head_html = old_html.strip() + "\n" + head_css_js
+	web_settings.app_logo = logo_principal
+	web_settings.favicon = favicon_iso
+	web_settings.brand_html = f'<img src="{logo_principal}" style="max-height: 30px; margin-right: 10px;"> {app_name}'
+	
+	web_settings.css = """
+/* CEDHI Login Page Customization */
+body.login-page {
+    background-image: url('/assets/inventario_cedhi/images/logotipo/Instituto/Instituto_Horizontal.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+body.login-page::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(9, 58, 179, 0.8) 0%, rgba(28, 46, 122, 0.8) 100%);
+    z-index: -1;
+}
+.login-content {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 24px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25) !important;
+    padding: 2rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.page-card-head img {
+    max-height: 80px !important;
+    margin-bottom: 20px;
+}
+"""
+	web_settings.save(ignore_permissions=True)
+
+	# Configurar Navbar Settings
+	try:
+		nav_settings = frappe.get_doc("Navbar Settings", "Navbar Settings")
+		nav_settings.app_logo = favicon_iso
+		nav_settings.save(ignore_permissions=True)
+	except frappe.DoesNotExistError:
+		pass

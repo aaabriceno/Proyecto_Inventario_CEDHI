@@ -25,7 +25,7 @@ app_license = "mit"
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/inventario_cedhi/css/inventario_cedhi_mobile.css?v=20260519_2"
+app_include_css = "/assets/inventario_cedhi/css/inventario_cedhi_mobile.css?v=20260608_3"
 app_include_js = "/assets/inventario_cedhi/js/mobile_navigation.js?v=20260519_2"
 
 # include js, css files in header of web template
