@@ -57,7 +57,7 @@ app_include_js = "/assets/inventario_cedhi/js/mobile_navigation.js?v=20260519_2"
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "login"
+home_page = "login"
 
 # website user home page (by Role)
 role_home_page = {
@@ -164,6 +164,7 @@ doc_events = {
 		"validate": "inventario_cedhi.alerts.set_alert_defaults",
 	},
 	"Movimiento de Inventario": {
+		"validate": "inventario_cedhi.inventory_logic.validate_stock_on_movement",
 		"on_submit": "inventario_cedhi.inventory_logic.update_stock_on_movement",
 		"on_cancel": "inventario_cedhi.inventory_logic.reverse_stock_on_cancel",
 	},

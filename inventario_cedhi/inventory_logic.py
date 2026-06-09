@@ -44,6 +44,13 @@ def set_internal_code(doc, method=None):
                 break
             next_num += 1
 
+def validate_stock_on_movement(doc, method=None):
+    """Validación Estricta: Previene salidas de stock mayores al stock actual."""
+    if doc.tipo_movimiento == "Salida" and doc.articulo:
+        stock_actual = frappe.db.get_value("Articulo de Inventario", doc.articulo, "stock_actual") or 0
+        if doc.cantidad > stock_actual:
+            frappe.throw(_("Operación bloqueada: No hay suficiente stock. Intentas retirar {0} unidades, pero el stock actual es de solo {1} unidades.").format(doc.cantidad, stock_actual))
+
 def update_stock_on_movement(doc, method=None):
     """Update stock_actual in Articulo de Inventario when a movement is submitted."""
     if not doc.articulo:
@@ -60,10 +67,8 @@ def update_stock_on_movement(doc, method=None):
         current_stock = articulo.stock_actual or 0
         adjustment = doc.cantidad - current_stock
         
-    # Check if we have enough stock for "Salida" (optional but recommended)
-    if doc.tipo_movimiento == "Salida" and (articulo.stock_actual or 0) < doc.cantidad:
-        # We allow it but maybe send a message? PRD doesn't forbid negative stock but it's good to know.
-        pass
+    # Validación estricta ya ocurre en `validate` (validate_stock_on_movement)
+    # Por lo que aquí asumimos que el stock es correcto.
 
     new_stock = (articulo.stock_actual or 0) + adjustment
     

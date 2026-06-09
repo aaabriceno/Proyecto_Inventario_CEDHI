@@ -155,7 +155,7 @@ def create_articulo_inventario_doctype():
 	doctype_name = "Articulo de Inventario"
 	fields = [
 		{
-			"fieldname": "datos_generales_section",
+			"fieldname": "datos_generales_Tsection",
 			"label": "Datos Generales",
 			"fieldtype": "Section Break",
 		},
@@ -164,6 +164,15 @@ def create_articulo_inventario_doctype():
 			"label": "Nombre del Articulo",
 			"fieldtype": "Data",
 			"reqd": 1,
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+		},
+		{
+			"fieldname": "codigo_barras",
+			"label": "Código de Barras / QR",
+			"fieldtype": "Data",
+			"options": "Barcode",
+			"unique": 1,
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 		},
@@ -1154,6 +1163,13 @@ def create_movimiento_inventario_doctype():
 					"fieldtype": "Section Break",
 				},
 				{
+					"fieldname": "scan_barcode",
+					"label": "Escanear Código (Opcional)",
+					"fieldtype": "Data",
+					"options": "Barcode",
+					"description": "Escanea el código de barras para seleccionar el artículo automáticamente",
+				},
+				{
 					"fieldname": "articulo",
 					"label": "Articulo",
 					"fieldtype": "Link",
@@ -1917,6 +1933,26 @@ def create_inventory_charts():
 			"type": "Bar",
 			"module": INVENTORY_MODULE,
 		},
+		{
+			"chart_name": "Movimientos del Mes",
+			"chart_type": "Group By",
+			"document_type": "Movimiento de Inventario",
+			"group_by_based_on": "tipo_movimiento",
+			"group_by_type": "Count",
+			"type": "Donut",
+			"module": INVENTORY_MODULE,
+		},
+		{
+			"chart_name": "Entradas vs Salidas",
+			"chart_type": "Group By",
+			"document_type": "Movimiento de Inventario",
+			"group_by_based_on": "fecha_movimiento",
+			"group_by_type": "Count",
+			"timeseries": 1,
+			"time_interval": "Monthly",
+			"type": "Line",
+			"module": INVENTORY_MODULE,
+		}
 	]
 
 	results = []
@@ -2261,6 +2297,30 @@ window.open_quick_kardex_dialog = function(opts) {
 	]
 	scripts = [
 		{
+			"dt": "Movimiento de Inventario",
+			"view": "Form",
+			"name": "Movimiento de Inventario - Escaner Barcode",
+			"script": """
+frappe.ui.form.on('Movimiento de Inventario', {
+    scan_barcode: function(frm) {
+        if(frm.doc.scan_barcode) {
+            frappe.db.get_value('Articulo de Inventario', {codigo_barras: frm.doc.scan_barcode}, 'name')
+            .then(r => {
+                if(r && r.message && r.message.name) {
+                    frm.set_value('articulo', r.message.name);
+                    frm.set_value('scan_barcode', ''); // clear input for next scan
+                    frappe.show_alert({message: __('Artículo escaneado correctamente'), indicator: 'green'});
+                } else {
+                    frappe.msgprint({title: __('Error de Escaneo'), message: __('No se encontró ningún artículo con el código de barras: ') + frm.doc.scan_barcode, indicator: 'red'});
+                    frm.set_value('scan_barcode', '');
+                }
+            });
+        }
+    }
+});
+"""
+		},
+		{
 			"dt": "Articulo de Inventario",
 			"name": "Articulo de Inventario - PRD Logic",
 			"script": """
@@ -2413,6 +2473,185 @@ frappe.listview_settings['Articulo de Inventario'].refresh = function(listview) 
 			results.append(script.name)
 	return results
 
+	return results
+
+def create_inventory_print_formats():
+	"""Create Custom Print Formats for Inventory (QR Labels and Movement Vouchers)."""
+	formats = [
+		{
+			"name": "Etiqueta CEDHI QR",
+			"doc_type": "Articulo de Inventario",
+			"module": INVENTORY_MODULE,
+			"standard": "No",
+			"custom_format": 1,
+			"print_format_builder": 0,
+			"format_data": "[]",
+			"html": """
+<style>
+.label-container {
+    width: 5cm;
+    height: 5cm;
+    padding: 0.2cm;
+    box-sizing: border-box;
+    text-align: center;
+    border: 1px dashed #ccc; /* Guía de recorte */
+    margin: 0 auto;
+    font-family: 'Helvetica', sans-serif;
+}
+.label-header {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #000;
+}
+.label-title {
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.1;
+    height: 24px;
+    overflow: hidden;
+}
+.label-qr {
+    margin: 5px 0;
+}
+.label-code {
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+</style>
+<div class="label-container">
+    <div class="label-header">INSTITUTO CEDHI</div>
+    <div class="label-title">{{ doc.nombre_articulo }}</div>
+    <div class="label-qr">
+        <img src="/api/method/frappe.utils.print_format.download_pdf?url={{ 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' ~ (doc.codigo_barras or doc.codigo_interno or doc.name) }}" style="width: 80px; height: 80px;" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ doc.codigo_barras or doc.codigo_interno or doc.name }}'"/>
+    </div>
+    <div class="label-code">{{ doc.codigo_interno or doc.name }}</div>
+</div>
+			"""
+		},
+		{
+			"name": "Vale de Movimiento CEDHI",
+			"doc_type": "Movimiento de Inventario",
+			"module": INVENTORY_MODULE,
+			"standard": "No",
+			"custom_format": 1,
+			"print_format_builder": 0,
+			"format_data": "[]",
+			"html": """
+<div style="font-family: Helvetica, Arial, sans-serif;">
+    <table style="width: 100%; border-bottom: 2px solid #093AB3; padding-bottom: 10px; margin-bottom: 20px;">
+        <tr>
+            <td style="width: 20%;">
+                <img src="/assets/inventario_cedhi/images/logotipo/CEDHI/Logotipo_principal_version_simplificada.png" style="max-height: 60px;">
+            </td>
+            <td style="width: 60%; text-align: center;">
+                <h2 style="color: #093AB3; margin: 0;">VALE DE MOVIMIENTO DE INVENTARIO</h2>
+                <p style="margin: 5px 0 0 0; color: #666;">Documento de Control Interno</p>
+            </td>
+            <td style="width: 20%; text-align: right;">
+                <p style="margin: 0; font-weight: bold; font-size: 18px; color: #333;">{{ doc.name }}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">{{ doc.fecha_movimiento }}</p>
+            </td>
+        </tr>
+    </table>
+
+    <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse;">
+        <tr>
+            <td style="width: 50%; vertical-align: top;">
+                <strong>Tipo de Movimiento:</strong> {{ doc.tipo_movimiento }}<br><br>
+                <strong>Responsable:</strong> {{ doc.responsable }}<br>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+                <strong>Artículo:</strong> {{ doc.articulo }}<br><br>
+                <strong>Cantidad:</strong> <span style="font-size: 18px; font-weight: bold;">{{ doc.cantidad }}</span><br>
+            </td>
+        </tr>
+    </table>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #093AB3; margin-bottom: 50px;">
+        <strong>Observaciones:</strong><br>
+        {{ doc.observaciones or "Sin observaciones" }}
+    </div>
+
+    <table style="width: 100%; margin-top: 50px; text-align: center;">
+        <tr>
+            <td style="width: 50%;">
+                <hr style="width: 70%; border-top: 1px solid #000;">
+                <p style="margin-top: 5px;">Firma del Responsable<br><small>{{ doc.responsable }}</small></p>
+            </td>
+            <td style="width: 50%;">
+                <hr style="width: 70%; border-top: 1px solid #000;">
+                <p style="margin-top: 5px;">Firma de Autorización<br><small>Almacén CEDHI</small></p>
+            </td>
+        </tr>
+    </table>
+</div>
+			"""
+		}
+	]
+
+	results = []
+	for fmt in formats:
+		if not frappe.db.exists("Print Format", fmt["name"]):
+			doc = frappe.get_doc({
+				"doctype": "Print Format",
+				**fmt
+			})
+			doc.insert(ignore_permissions=True)
+			results.append(doc.name)
+		else:
+			doc = frappe.get_doc("Print Format", fmt["name"])
+			doc.html = fmt["html"]
+			doc.save(ignore_permissions=True)
+			results.append(doc.name)
+	return results
+
+def create_inventory_reports():
+	"""Create Query Reports for Inventory (Kardex)."""
+	reports = [
+		{
+			"name": "Kardex de Movimientos",
+			"report_name": "Kardex de Movimientos",
+			"ref_doctype": "Movimiento de Inventario",
+			"report_type": "Query Report",
+			"module": INVENTORY_MODULE,
+			"is_standard": "No",
+			"query": """
+SELECT 
+    name as "ID Movimiento:Link/Movimiento de Inventario:150",
+    fecha_movimiento as "Fecha:Date:120",
+    tipo_movimiento as "Tipo:Data:120",
+    articulo as "Artículo:Link/Articulo de Inventario:200",
+    cantidad as "Cantidad:Int:100",
+    responsable as "Responsable:Data:180",
+    observaciones as "Observaciones:Data:250"
+FROM 
+    `tabMovimiento de Inventario`
+WHERE 
+    docstatus < 2
+ORDER BY 
+    fecha_movimiento DESC
+"""
+		}
+	]
+
+	results = []
+	for rep in reports:
+		if not frappe.db.exists("Report", rep["name"]):
+			doc = frappe.get_doc({
+				"doctype": "Report",
+				**rep
+			})
+			doc.insert(ignore_permissions=True)
+			results.append(doc.name)
+		else:
+			doc = frappe.get_doc("Report", rep["name"])
+			doc.query = rep["query"]
+			doc.save(ignore_permissions=True)
+			results.append(doc.name)
+	return results
 
 def create_initial_users():
 	"""Create the initial users defined in the PRD."""
@@ -2518,13 +2757,21 @@ def create_inventory_workspace():
 		{"id": "mc_alertas_tot", "type": "number_card", "data": {"number_card_name": "Alertas Totales", "col": 6}},
 		
 		{"id": "s1", "type": "spacer", "data": {"col": 12}},
-		
-		# Row 3: Shortcuts & Actions
-		{"id": "sh1", "type": "shortcut", "data": {"shortcut_name": "REPORTE MAESTRO (EXCEL)", "col": 12}},
+
+		# Row 3: Gráficos
+		{"id": "ch1", "type": "chart", "data": {"chart_name": "Entradas vs Salidas", "col": 6}},
+		{"id": "ch2", "type": "chart", "data": {"chart_name": "Movimientos del Mes", "col": 6}},
+		{"id": "ch3", "type": "chart", "data": {"chart_name": "Estado de Activos", "col": 6}},
+		{"id": "ch4", "type": "chart", "data": {"chart_name": "Distribución por Módulo", "col": 6}},
 		
 		{"id": "s2", "type": "spacer", "data": {"col": 12}},
 		
-		# Row 4: Navigation Cards
+		# Row 4: Shortcuts & Actions
+		{"id": "sh1", "type": "shortcut", "data": {"shortcut_name": "REPORTE MAESTRO (EXCEL)", "col": 12}},
+		
+		{"id": "s3", "type": "spacer", "data": {"col": 12}},
+		
+		# Row 5: Navigation Cards
 		{"id": "c1", "type": "card", "data": {"card_name": "Operaciones", "col": 4}},
 		{"id": "c2", "type": "card", "data": {"card_name": "Reportes", "col": 4}},
 		{"id": "c3", "type": "card", "data": {"card_name": "Configuración", "col": 4}},
@@ -2839,22 +3086,42 @@ body[data-path="login"] .login-content {
     padding: 2.5rem !important;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
-body[data-path="login"] .page-card-head img {
-    max-height: 120px !important;
+body[data-path="login"] nav.navbar .navbar-brand img {
+    max-height: 60px !important; /* Logo superior más grande */
+}
+body[data-path="login"] .page-card-head {
+    margin-top: 2vh;
+}
+body[data-path="login"] .page-card-head img.app-logo {
+    max-height: 200px !important; /* Logo central gigantesco */
     width: auto !important;
-    margin-bottom: 25px;
-    transform: scale(1.5);
-    transform-origin: center;
+    margin-bottom: 20px !important;
+    transform: scale(2) !important;
+    transform-origin: center !important;
+}
+body[data-path="login"] .sign-up-message, 
+body[data-path="login"] .sign-up-message a {
+    color: #ffffff !important;
+    font-weight: bold !important;
+    font-size: 1.1rem !important;
+    text-shadow: 0px 2px 4px rgba(0,0,0,0.8);
+}
+body[data-path="login"] .sign-up-message a {
+    text-decoration: underline !important;
 }
 </style>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    if (window.location.pathname !== '/login') return;
+    if (window.location.pathname !== '/login' && window.location.pathname !== '/') return;
+    
+    // Corregir el enlace del logo superior para que siempre lleve a /login de forma segura
+    document.querySelectorAll('.navbar-brand').forEach(el => el.href = '/login');
     
     const images = [
+        '/assets/inventario_cedhi/images/institudo-cedhi-nueva-arequipa.avif',
+        '/assets/inventario_cedhi/images/jovenesEstudiando-cedhi.avif',
         '/assets/inventario_cedhi/images/cedhi_lab_bg.png',
-        '/assets/inventario_cedhi/images/cedhi_kitchen_bg.png',
-        '/assets/inventario_cedhi/images/logotipo/Instituto/Instituto_Horizontal.jpg'
+        '/assets/inventario_cedhi/images/cedhi_kitchen_bg.png'
     ];
     
     const slider = document.createElement('div');
