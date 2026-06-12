@@ -162,10 +162,14 @@ docker compose exec backend bench --site inventario.localhost clear-cache
 Desde el navegador de Windows o del sistema anfitrion:
 
 ```text
-http://localhost:8080
+http://localhost:8080/login
 ```
 
 ### Actualizar cambios del proyecto dentro de Docker
+
+Hay dos formas:
+
+#### Primera forma(Reconstruyendo toda la imagen)
 
 Cuando se suban cambios a `develop`, la forma mas segura de actualizar Docker es bajando los cambios en local y reconstruyendo la imagen:
 
@@ -179,6 +183,7 @@ docker compose up -d --build
 Si necesitas descargar los últimos cambios de GitHub inmediatamente dentro del contenedor, sin esperar a reconstruir toda la imagen, ejecuta este comando:
 ```bash
 docker compose exec backend bash -c "cd apps/inventario_cedhi && git fetch https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git develop && git reset --hard FETCH_HEAD"
+```
 
 Si se crearon nuevas tablas, campos, reportes o cambios de modelo, sincronizar la base local:
 
@@ -191,6 +196,34 @@ Limpiar cache:
 
 ```bash
 docker compose exec backend bench --site inventario.localhost clear-cache
+```
+
+#### Segunda forma(Solo bajando los ultimos cambios)
+
+Para primero bajamos los cambios de la nube a los contenedores de Docker previamente creados:
+
+```bash
+docker compose exec backend bash -c "cd apps/inventario_cedhi && git fetch && git pull upstream develop"
+```
+
+Si los nuevos cambios de estilo, como Frappe no lee los archivos crudos como CSS, necesitamos "empaquetarlos" y luego actualizar la base de datos:
+
+```
+docker compose exec backend bench build --app inventario_cedhi
+docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
+```
+
+Y finalmete limpiar y reiniciar:
+
+```bash
+docker compose exec backend bench --site inventario.localhost clear-cache
+docker compose restart backend frontend
+```
+
+Supercomando para actualizar todo:
+
+```bash
+docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull upstream develop && bench build --app inventario_cedhi && bench --site inventario.localhost migrate && bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp && bench --site inventario.localhost clear-cache" && docker compose restart backend frontend
 ```
 
 ### Trabajar en una rama propia
@@ -354,7 +387,7 @@ Para que cualquier integrante pueda probar el inicio de sesion con Google en su 
 
 1. **Solicitar acceso de prueba:** El integrante debe enviar su correo de Gmail real al administrador de la cuenta de Google Cloud del proyecto, para que este lo agregue a la lista de **Usuarios de prueba** en la *Pantalla de consentimiento de OAuth*. Si no esta en esta lista, Google mostrara un error de "Acceso bloqueado".
 2. **Obtener las claves:** Recibir por privado el `Client ID` y `Client Secret`.
-3. **Registrar el usuario localmente:** 
+3. **Registrar el usuario localmente:**
    - Iniciar sesion en Frappe con un administrador local (ej. `superadmin@cedhi.local`).
    - Ir a la lista de **Usuarios** y cambiar el correo del SuperAdministrador por el correo de Gmail real, o crear un usuario nuevo con ese Gmail.
 4. **Configurar el Social Login:**
