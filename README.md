@@ -206,21 +206,28 @@ Para primero bajamos los cambios de la nube a los contenedores de Docker previam
 docker compose exec backend bash -c "cd apps/inventario_cedhi && git fetch && git pull upstream develop"
 ```
 
-Si los nuevos cambios de estilo, como Frappe no lee los archivos crudos como CSS, necesitamos "empaquetarlos" y luego actualizar la base de datos:
+##### Si los nuevos cambios son:
+- Archivos JavaScript (.js), SCSS o CSS públicos, entonces necesitamos volver a compilar con:
 
 ```
 docker compose exec backend bench build --app inventario_cedhi
 docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
 ```
 
-Y finalmete limpiar y reiniciar:
+- Archivos JSON de DocTypes, Reportes o Permisos, necesitamos migrar la base de datos.
+
+```bash
+docker compose exec backend bench --site inventario.localhost migrate
+```
+
+Finalmete limpiar y reiniciar:
 
 ```bash
 docker compose exec backend bench --site inventario.localhost clear-cache
 docker compose restart backend frontend
 ```
 
-Supercomando para actualizar todo:
+Supercomando para actualizar todo, si no se tiene completo conocimiento sobre los nuevos cambios:
 
 ```bash
 docker compose exec backend bash -c "cd apps/inventario_cedhi && git pull upstream develop && bench build --app inventario_cedhi && bench --site inventario.localhost migrate && bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp && bench --site inventario.localhost clear-cache" && docker compose restart backend frontend
