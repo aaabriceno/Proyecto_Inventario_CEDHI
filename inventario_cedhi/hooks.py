@@ -60,14 +60,14 @@ app_include_js = "/assets/inventario_cedhi/js/mobile_navigation.js?v=20260519_2"
 home_page = "login"
 
 # website user home page (by Role)
-role_home_page = {
-	"SuperAdministrador Inventario": "Inventario CEDHI",
-	"Admin TI": "Inventario CEDHI",
-	"Admin Cocina": "Inventario CEDHI",
-	"Admin General": "Inventario CEDHI",
-	"Revisor": "Inventario CEDHI",
-	"Reportante": "Inventario CEDHI",
-}
+# role_home_page = {
+# 	"SuperAdministrador Inventario": "Inventario CEDHI",
+# 	"Admin TI": "Inventario CEDHI",
+# 	"Admin Cocina": "Inventario CEDHI",
+# 	"Admin General": "Inventario CEDHI",
+# 	"Revisor": "Inventario CEDHI",
+# 	"Reportante": "Inventario CEDHI",
+# }
 
 # Generators
 # ----------
