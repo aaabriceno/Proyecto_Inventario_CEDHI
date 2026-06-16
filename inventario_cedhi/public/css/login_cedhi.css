@@ -1,0 +1,38 @@
+/* Fondo rotativo de ambientes CEDHI en la pantalla de login */
+
+.cedhi-login-bg {
+	position: fixed;
+	inset: 0;
+	z-index: -2;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	opacity: 0;
+	transition: opacity 1.2s ease-in-out;
+}
+
+.cedhi-login-bg.is-active {
+	opacity: 1;
+}
+
+/* Capa oscura para que el formulario de login sea legible sobre la foto */
+.cedhi-login-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	background: linear-gradient(
+		135deg,
+		rgba(15, 23, 42, 0.72) 0%,
+		rgba(30, 41, 59, 0.55) 100%
+	);
+}
+
+/* La caja del login translucida sobre el fondo */
+.page-card,
+.for-login,
+.for-signup,
+.for-forgot {
+	background: rgba(255, 255, 255, 0.94) !important;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35) !important;
+	backdrop-filter: blur(4px);
+}

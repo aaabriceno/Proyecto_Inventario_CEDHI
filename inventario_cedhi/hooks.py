@@ -32,6 +32,10 @@ app_include_js = "/assets/inventario_cedhi/js/mobile_navigation.js?v=20260519_2"
 # web_include_css = "/assets/inventario_cedhi/css/inventario_cedhi.css"
 # web_include_js = "/assets/inventario_cedhi/js/inventario_cedhi.js"
 
+# Fondo rotativo de ambientes CEDHI en la pantalla de login
+web_include_css = "/assets/inventario_cedhi/css/login_cedhi.css?v=20260615_1"
+web_include_js = "/assets/inventario_cedhi/js/login_cedhi.js?v=20260615_1"
+
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "inventario_cedhi/public/scss/website"
 
