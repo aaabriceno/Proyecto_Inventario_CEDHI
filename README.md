@@ -144,6 +144,8 @@ Si cambiaste `DB_PASSWORD` en `.env`, usa ese mismo valor en `--mariadb-root-pas
 
 ### 5. Ejecutar la configuracion inicial del MVP
 
+Antes de ejecutar el siguiente comando, primero hay que tener una configuracion de la aplicacion, con la zona horaria, para ello primero entramos como Administrator a http://localhost:8080/login y completamos los parametros que nos piden, luego salimos y ejecutamos el comando siguiente:
+
 ```bash
 docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
 ```
