@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-04-25 21:16:59.908055",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "datos_asignacion_section",
+  "nombre_asignacion",
+  "modulo",
+  "activo",
+  "datos_de_asignacion_section"
+ ],
+ "fields": [
+  {
+   "fieldname": "datos_asignacion_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Asignacion"
+  },
+  {
+   "fieldname": "nombre_asignacion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nombre de asignacion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "modulo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Modulo",
+   "options": "TI\nGastronomia\nGeneral",
+   "reqd": 1
+  },
+  {
+   "default": "Si",
+   "fieldname": "activo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Activo",
+   "options": "Si\nNo"
+  },
+  {
+   "fieldname": "datos_de_asignacion_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de asignacion"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-17 22:19:01.835094",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Asignacion",
+ "owner": "anthonyquiroz305@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SuperAdministrador Inventario",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin TI",
+   "select": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin Cocina",
+   "select": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin General",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Revisor",
+   "select": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Reportante",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nombre_asignacion"
+}

@@ -1,0 +1,205 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-04-29 13:26:39.993318",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "datos_alerta_section",
+  "articulo",
+  "tipo_alerta",
+  "modulo",
+  "ubicacion",
+  "estado_alerta",
+  "fecha_reporte",
+  "reportado_por",
+  "observacion",
+  "resolucion_section",
+  "accion_tomada",
+  "fecha_resolucion"
+ ],
+ "fields": [
+  {
+   "fieldname": "datos_alerta_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Alerta"
+  },
+  {
+   "fieldname": "articulo",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Articulo",
+   "options": "Articulo de Inventario",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tipo_alerta",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Tipo de alerta",
+   "options": "Stock bajo\nDa\u00f1ado\nPerdido\nVencido\nAjuste de stock\nOtro",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "articulo.modulo",
+   "fieldname": "modulo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Modulo",
+   "options": "TI\nGastronomia\nGeneral"
+  },
+  {
+   "fetch_from": "articulo.ubicacion",
+   "fieldname": "ubicacion",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Ubicacion",
+   "options": "Ubicacion"
+  },
+  {
+   "default": "Pendiente",
+   "fieldname": "estado_alerta",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado de alerta",
+   "options": "Pendiente\nVerificado\nAjustado\nRechazado",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_reporte",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha de reporte",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reportado_por",
+   "fieldtype": "Link",
+   "label": "Reportado por",
+   "options": "User"
+  },
+  {
+   "fieldname": "observacion",
+   "fieldtype": "Small Text",
+   "label": "Observacion"
+  },
+  {
+   "fieldname": "resolucion_section",
+   "fieldtype": "Section Break",
+   "label": "Resolucion"
+  },
+  {
+   "fieldname": "accion_tomada",
+   "fieldtype": "Small Text",
+   "label": "Accion tomada"
+  },
+  {
+   "fieldname": "fecha_resolucion",
+   "fieldtype": "Date",
+   "label": "Fecha de resolucion"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-17 22:19:01.834847",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Alerta de Inventario",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SuperAdministrador Inventario",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin TI",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin Cocina",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin General",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Revisor"
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Reportante",
+   "select": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "articulo"
+}

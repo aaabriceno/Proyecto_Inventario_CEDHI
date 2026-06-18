@@ -54,8 +54,16 @@ def create_core_inventory_doctypes():
 
 
 def ensure_inventory_module_def():
-	"""Ensure the app module exists for custom DocTypes and workspace links."""
+	"""Ensure the app module exists for DocTypes and workspace links.
+
+	Idempotente y auto-reparador: si el Module Def existe pero le falta el
+	app_name correcto (caso que rompe el migrate marcando los DocTypes como
+	huerfanos), lo corrige. Los DocTypes viven versionados en .json, por eso
+	el modulo se mantiene como modulo de app (custom=0).
+	"""
 	if frappe.db.exists("Module Def", INVENTORY_MODULE):
+		if frappe.db.get_value("Module Def", INVENTORY_MODULE, "app_name") != "inventario_cedhi":
+			frappe.db.set_value("Module Def", INVENTORY_MODULE, "app_name", "inventario_cedhi")
 		return {"created": False, "module": INVENTORY_MODULE}
 
 	module = frappe.get_doc(
@@ -63,7 +71,7 @@ def ensure_inventory_module_def():
 			"doctype": "Module Def",
 			"module_name": INVENTORY_MODULE,
 			"app_name": "inventario_cedhi",
-			"custom": 1,
+			"custom": 0,
 		}
 	)
 	module.insert(ignore_permissions=True)
@@ -259,6 +267,8 @@ def create_articulo_inventario_doctype():
 
 def _create_or_update_core_doctype(doctype_name, fields, title_field, image_field=None):
 	if frappe.db.exists("DocType", doctype_name):
+		# El DocType ya existe (versionado en .json y migrado). No forzamos
+		# custom=1: respetamos su definicion en codigo (custom=0).
 		doc = frappe.get_doc("DocType", doctype_name)
 		created = False
 	else:
@@ -289,7 +299,10 @@ def _create_or_update_core_doctype(doctype_name, fields, title_field, image_fiel
 		created = True
 
 	doc.module = INVENTORY_MODULE
-	doc.custom = 1
+	# Solo los creados aqui desde cero quedan custom=1. Si ya existe como
+	# DocType de app versionado (custom=0), se mantiene.
+	if created:
+		doc.custom = 1
 	doc.allow_import = 1
 	doc.title_field = title_field
 	doc.show_title_field_in_link = 1

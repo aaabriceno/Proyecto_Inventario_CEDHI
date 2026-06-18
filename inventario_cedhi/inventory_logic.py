@@ -4,6 +4,35 @@ from frappe import _
 from frappe.utils import flt
 
 
+def require_estado_change_reason(doc, method=None):
+    """RF-C03: exige motivo obligatorio al marcar un articulo como 'De baja' o
+    'En reparación', para mantener la integridad/trazabilidad del inventario.
+
+    Solo valida cuando el estado cambia hacia un estado critico (no en cada save),
+    para no molestar al editar articulos ya dados de baja.
+    """
+    estados_con_motivo = {"De baja", "En reparación"}
+    if doc.estado not in estados_con_motivo:
+        return
+
+    # Determinar el estado anterior para validar solo en la transicion.
+    estado_anterior = None
+    if not doc.is_new():
+        estado_anterior = frappe.db.get_value("Articulo de Inventario", doc.name, "estado")
+
+    # Si ya estaba en ese estado y no cambio, no re-exigimos motivo.
+    if estado_anterior == doc.estado:
+        return
+
+    if not (doc.motivo_cambio_estado or "").strip():
+        frappe.throw(
+            _("Debe indicar el motivo del cambio de estado al marcar el articulo como '{0}'.").format(
+                _(doc.estado)
+            ),
+            title=_("Motivo obligatorio"),
+        )
+
+
 def set_internal_code(doc, method=None):
     """RF-GE-02: Automatically assign a unique internal code for all inventory modules if not provided."""
     if not doc.codigo_interno and doc.modulo:

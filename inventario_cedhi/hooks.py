@@ -63,15 +63,17 @@ web_include_js = "/assets/inventario_cedhi/js/login_cedhi.js?v=20260615_1"
 # application home page (will override Website Settings)
 home_page = "login"
 
-# website user home page (by Role)
-# role_home_page = {
-# 	"SuperAdministrador Inventario": "Inventario CEDHI",
-# 	"Admin TI": "Inventario CEDHI",
-# 	"Admin Cocina": "Inventario CEDHI",
-# 	"Admin General": "Inventario CEDHI",
-# 	"Revisor": "Inventario CEDHI",
-# 	"Reportante": "Inventario CEDHI",
-# }
+# Tras el login, cada rol del CEDHI aterriza en el workspace de inventario en vez
+# del Desk generico de ERPNext (que mostraria modulos ajenos como Accounting/CRM).
+# El contenido visible dentro del workspace ya esta filtrado por los permisos de rol.
+role_home_page = {
+	"SuperAdministrador Inventario": "app/inventario-cedhi",
+	"Admin TI": "app/inventario-cedhi",
+	"Admin Cocina": "app/inventario-cedhi",
+	"Admin General": "app/inventario-cedhi",
+	"Revisor": "app/inventario-cedhi",
+	"Reportante": "app/inventario-cedhi",
+}
 
 # Generators
 # ----------
@@ -92,7 +94,10 @@ home_page = "login"
 # ------------
 
 # before_install = "inventario_cedhi.install.before_install"
-# after_install = "inventario_cedhi.install.after_install"
+after_install = "inventario_cedhi.install.after_install"
+
+# Re-asegura configuracion idempotente (campos, permisos, workspaces) tras cada migrate
+after_migrate = "inventario_cedhi.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -162,6 +167,7 @@ has_permission = {
 doc_events = {
 	"Articulo de Inventario": {
 		"before_insert": "inventario_cedhi.inventory_logic.set_internal_code",
+		"validate": "inventario_cedhi.inventory_logic.require_estado_change_reason",
 	},
 	"Alerta de Inventario": {
 		"before_insert": "inventario_cedhi.alerts.set_alert_defaults",
@@ -279,3 +285,34 @@ before_job = ["inventario_cedhi.inventory_logic.force_spanish_language"]
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
+
+
+# Fixtures
+# ------------------
+# Respaldo versionado de configuracion que no vive en .json: roles del CEDHI y
+# campos custom del doctype User (usados por el rol Reportante). Tambien viajan
+# via install.py/after_migrate, pero declararlos como fixtures garantiza que
+# `bench export-fixtures` los capture y se restauren en cualquier despliegue.
+fixtures = [
+	{
+		"dt": "Role",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"SuperAdministrador Inventario",
+					"Admin TI",
+					"Admin Cocina",
+					"Admin General",
+					"Revisor",
+					"Reportante",
+				],
+			]
+		],
+	},
+	{
+		"dt": "Custom Field",
+		"filters": [["fieldname", "in", ["inventario_modulo_asignado", "inventario_ubicacion_asignada"]]],
+	},
+]

@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-04-25 20:58:35.265451",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "datos_ubicacion_section",
+  "nombre_ubicacion",
+  "modulo",
+  "pabellon",
+  "aula",
+  "activo",
+  "datos_de_ubicacion_section"
+ ],
+ "fields": [
+  {
+   "fieldname": "datos_ubicacion_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Ubicacion"
+  },
+  {
+   "fieldname": "nombre_ubicacion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nombre de ubicacion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "modulo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Modulo",
+   "options": "TI\nGastronomia\nGeneral",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pabellon",
+   "fieldtype": "Data",
+   "label": "Pabellon"
+  },
+  {
+   "fieldname": "aula",
+   "fieldtype": "Data",
+   "label": "Aula"
+  },
+  {
+   "default": "Si",
+   "fieldname": "activo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Activo",
+   "options": "Si\nNo"
+  },
+  {
+   "fieldname": "datos_de_ubicacion_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Ubicacion"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-17 22:19:01.835382",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Ubicacion",
+ "owner": "anthonyquiroz305@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SuperAdministrador Inventario",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin TI",
+   "select": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin Cocina",
+   "select": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin General",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Revisor",
+   "select": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Reportante",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nombre_ubicacion"
+}

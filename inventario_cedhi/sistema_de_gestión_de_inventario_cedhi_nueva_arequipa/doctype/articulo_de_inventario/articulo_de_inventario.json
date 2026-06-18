@@ -1,0 +1,433 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-04-25 21:27:38.968660",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "datos_generales_section",
+  "nombre_articulo",
+  "codigo_barras",
+  "descripcion",
+  "modulo",
+  "ubicacion",
+  "asignacion",
+  "estado",
+  "fecha_adquisicion",
+  "codigo_interno",
+  "datos_tecnicos_section",
+  "marca",
+  "modelo",
+  "fotografia",
+  "datos_de_stock_section",
+  "stock_actual",
+  "stock_critico",
+  "unidad_medida",
+  "es_perecible",
+  "fecha_vencimiento",
+  "trazabilidad_section",
+  "motivo_cambio_estado",
+  "fecha_de_adquisici\u00f3n",
+  "datos_catalogo_gastronomia_section",
+  "grupo",
+  "categoria",
+  "presentacion",
+  "proveedor_referencia",
+  "medida",
+  "porcentaje_desperdicio",
+  "cantidad_minima",
+  "precio_referencial",
+  "datos_mobiliario_section",
+  "pabellon",
+  "aula",
+  "cantidad",
+  "estado_conservacion",
+  "trazabilidad_importacion_section",
+  "fuente_datos",
+  "hoja_origen",
+  "numero_origen"
+ ],
+ "fields": [
+  {
+   "fieldname": "datos_generales_section",
+   "fieldtype": "Section Break",
+   "label": "Datos Generales"
+  },
+  {
+   "fieldname": "nombre_articulo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nombre del Articulo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "codigo_barras",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "C\u00f3digo de Barras / QR",
+   "options": "Barcode",
+   "unique": 1
+  },
+  {
+   "fieldname": "descripcion",
+   "fieldtype": "Small Text",
+   "label": "Descripcion"
+  },
+  {
+   "fieldname": "modulo",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Modulo",
+   "options": "TI\nGastronomia\nGeneral",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ubicacion",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Ubicacion",
+   "options": "Ubicacion",
+   "reqd": 1
+  },
+  {
+   "fieldname": "asignacion",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Asignacion",
+   "options": "Asignacion"
+  },
+  {
+   "default": "Activo",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado",
+   "options": "Activo\nDe baja\nEn reparaci\u00f3n",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_adquisicion",
+   "fieldtype": "Date",
+   "label": "Fecha de adquisicion"
+  },
+  {
+   "fieldname": "codigo_interno",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Codigo interno"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"TI\"",
+   "fieldname": "datos_tecnicos_section",
+   "fieldtype": "Section Break",
+   "label": "Datos Tecnicos"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"TI\"",
+   "fieldname": "marca",
+   "fieldtype": "Data",
+   "label": "Marca",
+   "mandatory_depends_on": "eval:doc.modulo==\"TI\""
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"TI\"",
+   "fieldname": "modelo",
+   "fieldtype": "Data",
+   "label": "Modelo",
+   "mandatory_depends_on": "eval:doc.modulo==\"TI\""
+  },
+  {
+   "fieldname": "fotografia",
+   "fieldtype": "Attach Image",
+   "label": "Fotografia"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "datos_de_stock_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Stock"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "stock_actual",
+   "fieldtype": "Float",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Stock actual"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "stock_critico",
+   "fieldtype": "Float",
+   "label": "Stock critico"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "unidad_medida",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Unidad de medida",
+   "mandatory_depends_on": "eval:doc.modulo==\"Gastronomia\""
+  },
+  {
+   "default": "No",
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "es_perecible",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_standard_filter": 1,
+   "label": "Es perecible",
+   "options": "Si\nNo"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "fecha_vencimiento",
+   "fieldtype": "Date",
+   "label": "Fecha de vencimiento"
+  },
+  {
+   "fieldname": "trazabilidad_section",
+   "fieldtype": "Section Break",
+   "label": "Trazabilidad"
+  },
+  {
+   "fieldname": "motivo_cambio_estado",
+   "fieldtype": "Small Text",
+   "label": "Motivo de cambio de estado",
+   "mandatory_depends_on": "eval:doc.estado!=\"Activo\""
+  },
+  {
+   "fieldname": "fecha_de_adquisici\u00f3n",
+   "fieldtype": "Date",
+   "label": "Fecha de adquisicion",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "datos_catalogo_gastronomia_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Catalogo Gastronomia"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "grupo",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Grupo"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "categoria",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_standard_filter": 1,
+   "label": "Categoria"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "presentacion",
+   "fieldtype": "Data",
+   "label": "Presentacion"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "proveedor_referencia",
+   "fieldtype": "Data",
+   "label": "Proveedor de referencia"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "medida",
+   "fieldtype": "Float",
+   "label": "Medida"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "porcentaje_desperdicio",
+   "fieldtype": "Percent",
+   "label": "Porcentaje desperdicio"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "cantidad_minima",
+   "fieldtype": "Float",
+   "label": "Cantidad minima"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
+   "fieldname": "precio_referencial",
+   "fieldtype": "Currency",
+   "label": "Precio referencial"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"General\"",
+   "fieldname": "datos_mobiliario_section",
+   "fieldtype": "Section Break",
+   "label": "Datos de Mobiliario"
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"General\"",
+   "fetch_from": "ubicacion.pabellon",
+   "fetch_if_empty": 1,
+   "fieldname": "pabellon",
+   "fieldtype": "Data",
+   "label": "Pabellon",
+   "mandatory_depends_on": "eval:doc.modulo==\"General\""
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"General\"",
+   "fetch_from": "ubicacion.aula",
+   "fetch_if_empty": 1,
+   "fieldname": "aula",
+   "fieldtype": "Data",
+   "label": "Aula",
+   "mandatory_depends_on": "eval:doc.modulo==\"General\""
+  },
+  {
+   "depends_on": "eval:doc.modulo==\"TI\" || doc.modulo==\"General\"",
+   "fieldname": "cantidad",
+   "fieldtype": "Float",
+   "label": "Cantidad"
+  },
+  {
+   "depends_on": "eval:doc.modulo!=\"Gastronomia\"",
+   "fieldname": "estado_conservacion",
+   "fieldtype": "Data",
+   "label": "Estado de conservacion"
+  },
+  {
+   "fieldname": "trazabilidad_importacion_section",
+   "fieldtype": "Section Break",
+   "label": "Trazabilidad de Importacion"
+  },
+  {
+   "fieldname": "fuente_datos",
+   "fieldtype": "Data",
+   "label": "Fuente de datos"
+  },
+  {
+   "fieldname": "hoja_origen",
+   "fieldtype": "Data",
+   "label": "Hoja origen"
+  },
+  {
+   "fieldname": "numero_origen",
+   "fieldtype": "Data",
+   "label": "Numero origen"
+  }
+ ],
+ "grid_page_length": 50,
+ "image_field": "fotografia",
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-17 22:19:01.824915",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Articulo de Inventario",
+ "owner": "anthonyquiroz305@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SuperAdministrador Inventario",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin TI",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin Cocina",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin General",
+   "select": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Revisor"
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Reportante",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nombre_articulo"
+}
