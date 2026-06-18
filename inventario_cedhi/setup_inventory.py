@@ -2868,7 +2868,31 @@ def create_inventory_workspace():
 			"url": "/app/query-report/Reporte Maestro de Inventario",
 			"label": "REPORTE MAESTRO (EXCEL)",
 			"color": "Green",
-		}
+		},
+		{
+			"type": "URL",
+			"url": "/cargar_catalogo",
+			"label": "CARGAR CATÁLOGO INICIAL",
+			"color": "Blue",
+		},
+		{
+			"type": "URL",
+			"url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=Gastronomia",
+			"label": "PLANTILLA GASTRONOMÍA",
+			"color": "Orange",
+		},
+		{
+			"type": "URL",
+			"url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=TI",
+			"label": "PLANTILLA TI",
+			"color": "Orange",
+		},
+		{
+			"type": "URL",
+			"url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=General",
+			"label": "PLANTILLA GENERAL",
+			"color": "Orange",
+		},
 	]
 
 	roles = [

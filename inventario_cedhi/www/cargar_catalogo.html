@@ -1,0 +1,62 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Cargar catálogo inicial - CEDHI{% endblock %}
+
+{% block page_content %}
+<div class="container" style="max-width: 720px; margin: 40px auto;">
+	<h2>Carga del catálogo inicial</h2>
+	<p class="text-muted">
+		Importa el catálogo de artículos del CEDHI (Gastronomía, TI) desde los
+		archivos preparados. La carga es <strong>idempotente</strong>: si un
+		artículo ya existe no se duplica, solo se actualiza.
+	</p>
+
+	{% if not puede_importar %}
+		<div class="alert alert-warning">
+			No tiene permiso para ejecutar esta carga. Solo el Superadministrador
+			puede hacerlo.
+		</div>
+	{% else %}
+		<form method="POST" action="/cargar_catalogo">
+			<div class="form-group" style="margin: 16px 0;">
+				<label for="modulo">Módulo a cargar</label>
+				<select name="modulo" id="modulo" class="form-control">
+					<option value="">Todos</option>
+					<option value="Gastronomia">Solo Gastronomía</option>
+					<option value="TI">Solo TI</option>
+					<option value="General">Solo General</option>
+				</select>
+			</div>
+			<button type="submit" class="btn btn-primary">
+				Cargar catálogo
+			</button>
+		</form>
+
+		{% if resultado %}
+			<div class="alert alert-success" style="margin-top: 24px;">
+				<strong>Carga completada.</strong>
+			</div>
+			<table class="table table-bordered" style="margin-top: 12px;">
+				<thead>
+					<tr>
+						<th>Archivo</th>
+						<th>Módulo</th>
+						<th>Creados</th>
+						<th>Actualizados</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for archivo, datos in resultado.items() %}
+					<tr>
+						<td>{{ archivo }}</td>
+						<td>{{ datos.get("modulo", "-") }}</td>
+						<td>{{ datos.get("creados", datos.get("error", "-")) }}</td>
+						<td>{{ datos.get("actualizados", "-") }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endif %}
+	{% endif %}
+</div>
+{% endblock %}
