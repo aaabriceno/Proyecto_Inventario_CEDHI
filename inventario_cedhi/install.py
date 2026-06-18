@@ -10,7 +10,28 @@ Todas las funciones llamadas aqui son idempotentes: correr esto multiples veces 
 duplica ni rompe nada.
 """
 
+from contextlib import contextmanager
+
 import frappe
+
+
+@contextmanager
+def _developer_mode():
+	"""Activa developer_mode temporalmente.
+
+	El setup ajusta la estructura de DocTypes de app (custom=0). Frappe solo
+	permite modificar esos DocTypes en developer_mode; sin el, lanza
+	CannotCreateStandardDoctypeError (caso tipico al instalar en un contenedor
+	de produccion). Lo activamos solo durante el setup y lo restauramos al final.
+	"""
+	previous = frappe.conf.get("developer_mode")
+	frappe.flags.in_developer_mode = True
+	frappe.conf.developer_mode = 1
+	try:
+		yield
+	finally:
+		frappe.conf.developer_mode = previous
+		frappe.flags.in_developer_mode = bool(previous)
 
 
 def after_install():
@@ -21,7 +42,8 @@ def after_install():
 	"""
 	from inventario_cedhi.setup_inventory import setup_inventory_mvp
 
-	setup_inventory_mvp()
+	with _developer_mode():
+		setup_inventory_mvp()
 	frappe.db.commit()
 
 
@@ -56,16 +78,17 @@ def ensure_runtime_configuration():
 	]
 
 	results = {}
-	for label, fn in steps:
-		try:
-			results[label] = fn()
-		except Exception:
-			# Un paso de config que falle no debe abortar todo el migrate.
-			frappe.log_error(
-				title=f"inventario_cedhi after_migrate: {label}",
-				message=frappe.get_traceback(),
-			)
-			results[label] = {"error": True}
+	with _developer_mode():
+		for label, fn in steps:
+			try:
+				results[label] = fn()
+			except Exception:
+				# Un paso de config que falle no debe abortar todo el migrate.
+				frappe.log_error(
+					title=f"inventario_cedhi after_migrate: {label}",
+					message=frappe.get_traceback(),
+				)
+				results[label] = {"error": True}
 
 	setup.enforce_system_language()
 	setup.apply_cedhi_branding()

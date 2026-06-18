@@ -267,8 +267,13 @@ def create_articulo_inventario_doctype():
 
 def _create_or_update_core_doctype(doctype_name, fields, title_field, image_field=None):
 	if frappe.db.exists("DocType", doctype_name):
-		# El DocType ya existe (versionado en .json y migrado). No forzamos
-		# custom=1: respetamos su definicion en codigo (custom=0).
+		# Si ya existe como DocType de app (custom=0), su estructura la define el
+		# .json versionado y la sincroniza el migrate estandar. No lo tocamos
+		# aqui: guardar un DocType custom=0 fuera de developer mode lanza
+		# CannotCreateStandardDoctypeError. Solo seguimos para doctypes legacy
+		# custom=1 creados en runtime.
+		if not frappe.db.get_value("DocType", doctype_name, "custom"):
+			return {"created": False, "skipped": "versioned doctype (custom=0)"}
 		doc = frappe.get_doc("DocType", doctype_name)
 		created = False
 	else:
@@ -3050,8 +3055,14 @@ def apply_cedhi_branding():
 	splash_logo = "/assets/inventario_cedhi/images/logotipo/CEDHI/Logotipo_principal-02.png"
 	app_name = "Inventario CEDHI"
 
-	# Configurar System Settings
+	# Configurar System Settings. En un sitio recien creado time_zone puede
+	# estar vacio (es mandatory): lo aseguramos antes de guardar para no romper
+	# el branding durante after_install/after_migrate.
 	sys_settings = frappe.get_doc("System Settings")
+	if not sys_settings.time_zone:
+		sys_settings.time_zone = "America/Lima"
+	if not sys_settings.language:
+		sys_settings.language = "es"
 	sys_settings.app_name = app_name
 	sys_settings.app_logo = splash_logo
 	sys_settings.save(ignore_permissions=True)
