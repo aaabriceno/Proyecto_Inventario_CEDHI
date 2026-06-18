@@ -2819,7 +2819,11 @@ def create_inventory_workspace():
 		{"id": "s2", "type": "spacer", "data": {"col": 12}},
 
 		# Row 4: Shortcuts & Actions
-		{"id": "sh1", "type": "shortcut", "data": {"shortcut_name": "REPORTE MAESTRO (EXCEL)", "col": 12}},
+		{"id": "sh1", "type": "shortcut", "data": {"shortcut_name": "REPORTE MAESTRO (EXCEL)", "col": 6}},
+		{"id": "sh2", "type": "shortcut", "data": {"shortcut_name": "CARGAR CATÁLOGO INICIAL", "col": 6}},
+		{"id": "sh3", "type": "shortcut", "data": {"shortcut_name": "PLANTILLA GASTRONOMÍA", "col": 4}},
+		{"id": "sh4", "type": "shortcut", "data": {"shortcut_name": "PLANTILLA TI", "col": 4}},
+		{"id": "sh5", "type": "shortcut", "data": {"shortcut_name": "PLANTILLA GENERAL", "col": 4}},
 
 		{"id": "s3", "type": "spacer", "data": {"col": 12}},
 
