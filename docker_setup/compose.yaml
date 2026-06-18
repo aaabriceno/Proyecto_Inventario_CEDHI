@@ -61,18 +61,15 @@ services:
       - bash
       - -c
     command:
-      - >
+      - |
+        set -e
         if [ ! -d "sites/$$SITE_NAME" ]; then
-          bench new-site --no-mariadb-socket
-            --admin-password=$$ADMIN_PASSWORD
-            --db-root-password=$$DB_PASSWORD
-            --install-app erpnext
-            --set-default $$SITE_NAME;
-          bench --site $$SITE_NAME install-app inventario_cedhi;
+          bench new-site --no-mariadb-socket --admin-password="$$ADMIN_PASSWORD" --db-root-password="$$DB_PASSWORD" --install-app erpnext --set-default "$$SITE_NAME"
+          bench --site "$$SITE_NAME" install-app inventario_cedhi
         else
-          echo "Sitio $$SITE_NAME ya existe, asegurando app inventario_cedhi";
-          bench --site $$SITE_NAME install-app inventario_cedhi || true;
-          bench --site $$SITE_NAME migrate;
+          echo "Sitio $$SITE_NAME ya existe, asegurando app inventario_cedhi"
+          bench --site "$$SITE_NAME" install-app inventario_cedhi || true
+          bench --site "$$SITE_NAME" migrate
         fi
     environment:
       SITE_NAME: ${SITE_NAME:-inventario.localhost}
