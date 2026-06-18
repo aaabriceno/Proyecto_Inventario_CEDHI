@@ -12,9 +12,43 @@ from frappe.utils import cint
 INVENTORY_MODULE = "Sistema de Gestión de Inventario CEDHI Nueva Arequipa"
 
 
+def complete_erpnext_setup():
+	"""Completa el setup wizard de ERPNext con los datos del CEDHI.
+
+	En un sitio nuevo, ERPNext exige pasar el setup wizard (crea Company, pais,
+	moneda) antes de poder usar el Desk. Si no se completa, el wizard interactivo
+	se abre y ademas tiene un bug con country=None. Lo completamos por codigo de
+	forma idempotente para que el contenedor/servidor quede listo sin pasos
+	manuales.
+	"""
+	if frappe.get_system_settings("setup_complete"):
+		return {"already_complete": True}
+
+	from frappe.desk.page.setup_wizard.setup_wizard import setup_complete as frappe_setup_complete
+
+	args = {
+		"language": "Spanish",
+		"country": "Peru",
+		"currency": "PEN",
+		"timezone": "America/Lima",
+		"company_name": "CEDHI Nueva Arequipa",
+		"company_abbr": "CNA",
+		"chart_of_accounts": "Standard",
+		"fy_start_date": f"{frappe.utils.nowdate()[:4]}-01-01",
+		"fy_end_date": f"{frappe.utils.nowdate()[:4]}-12-31",
+		"full_name": "Administrador CEDHI",
+		"email": "admin@cedhi.local",
+		"password": "admin",
+	}
+	frappe_setup_complete(args)
+	frappe.db.commit()
+	return {"completed": True}
+
+
 def setup_inventory_mvp():
 	"""Create and configure the complete MVP structure in the right order."""
 	results = {}
+	results["ERPNext Setup"] = complete_erpnext_setup()
 	results["Core DocTypes"] = create_core_inventory_doctypes()
 	results["Reference Data"] = ensure_initial_reference_data()
 	results["Gastronomy Fields"] = add_gastronomy_catalog_fields()
