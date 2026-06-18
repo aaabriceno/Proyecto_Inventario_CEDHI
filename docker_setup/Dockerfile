@@ -1,8 +1,9 @@
-# Usa la versión exacta que descargaste previamente
-FROM frappe/erpnext:v16.18.3
+# Imagen base de ERPNext v15 (misma serie que el bench de desarrollo).
+# La app inventario_cedhi esta hecha para v15; NO usar v16 (rompe compatibilidad).
+FROM frappe/erpnext:v15.99.1
 
-# Cambiamos al usuario frappe por seguridad
 USER frappe
 
-# Esto descarga tu app, corrige los nombres y la instala en Python automáticamente
+# Descarga e instala la app inventario_cedhi (branch develop) dentro del bench.
+# get-app deja la app en apps/ y la registra en el entorno Python.
 RUN bench get-app --branch develop inventario_cedhi https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git

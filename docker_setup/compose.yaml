@@ -52,9 +52,42 @@ services:
         condition: service_started
     restart: on-failure
 
+  # Crea el sitio la primera vez e instala erpnext + inventario_cedhi.
+  # Idempotente: si el sitio ya existe, no lo recrea (solo asegura la app).
+  create-site:
+    <<: *backend_defaults
+    platform: linux/amd64
+    entrypoint:
+      - bash
+      - -c
+    command:
+      - >
+        if [ ! -d "sites/$$SITE_NAME" ]; then
+          bench new-site --no-mariadb-socket
+            --admin-password=$$ADMIN_PASSWORD
+            --db-root-password=$$DB_PASSWORD
+            --install-app erpnext
+            --set-default $$SITE_NAME;
+          bench --site $$SITE_NAME install-app inventario_cedhi;
+        else
+          echo "Sitio $$SITE_NAME ya existe, asegurando app inventario_cedhi";
+          bench --site $$SITE_NAME install-app inventario_cedhi || true;
+          bench --site $$SITE_NAME migrate;
+        fi
+    environment:
+      SITE_NAME: ${SITE_NAME:-inventario.localhost}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
+    restart: "no"
+
   backend:
     <<: *backend_defaults
     platform: linux/amd64
+    depends_on:
+      configurator:
+        condition: service_completed_successfully
+      create-site:
+        condition: service_completed_successfully
 
   frontend:
     <<: *customizable_image
@@ -75,8 +108,12 @@ services:
     volumes:
       - sites:/home/frappe/frappe-bench/sites
     depends_on:
-      - backend
-      - websocket
+      backend:
+        condition: service_started
+      websocket:
+        condition: service_started
+      create-site:
+        condition: service_completed_successfully
 
   websocket:
     <<: [*depends_on_configurator, *customizable_image]
