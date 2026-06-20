@@ -165,7 +165,19 @@ def user_query_conditions(user=None):
 			)
 		"""
 	if roles & LIMITED_USER_ROLES:
-		return f"`tabUser`.`name` = {frappe.db.escape(user)}"
+		# Ver (read) esta permitido entre usuarios del mismo rol (ej. un Admin
+		# Cocina puede ver a otros Admin Cocina), pero modificar sigue limitado
+		# a si mismo (ver user_has_permission). Esto es solo lectura/listado.
+		own_roles = roles & LIMITED_USER_ROLES
+		role_list = ", ".join(frappe.db.escape(role) for role in sorted(own_roles))
+		return f"""
+			exists (
+				select 1
+				from `tabHas Role`
+				where `tabHas Role`.`parent` = `tabUser`.`name`
+				  and `tabHas Role`.`role` in ({role_list})
+			)
+		"""
 	return None
 
 
@@ -238,7 +250,17 @@ def user_has_permission(doc, ptype=None, user=None):
 		target_roles = set(frappe.get_roles(doc.name))
 		return bool(target_roles & INVENTORY_USER_ROLES) and not bool(target_roles & SYSTEM_ACCESS_ROLES)
 	if roles & LIMITED_USER_ROLES:
-		return bool(doc and doc.name == user)
+		if not doc:
+			return True
+		if doc.name == user:
+			return True
+		if ptype in {"read", "select", "print", "report", "email", "export"}:
+			# Solo lectura: puede ver a otros usuarios con su mismo rol.
+			own_roles = roles & LIMITED_USER_ROLES
+			target_roles = set(frappe.get_roles(doc.name))
+			return bool(own_roles & target_roles)
+		# Cualquier modificacion (write/create/delete) sigue limitada a si mismo.
+		return False
 	return True
 
 
