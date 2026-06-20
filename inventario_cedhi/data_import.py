@@ -310,18 +310,27 @@ def generar_plantilla_csv(modulo):
 	return buffer.getvalue()
 
 
+_MODULE_TEMPLATE_ROLE = {
+	"TI": "Admin TI",
+	"Gastronomia": "Admin Cocina",
+	"General": "Admin General",
+}
+
+
 @frappe.whitelist()
 def descargar_plantilla(modulo="Gastronomia"):
 	"""Endpoint que descarga la plantilla de importacion de un modulo.
 
 	El CEDHI usa este archivo para registrar articulos nuevos y luego cargarlos.
+	Cada Admin de modulo solo puede descargar la plantilla de SU modulo, ya que
+	el importador (validate_data_import_module_scope) tampoco le permitiria
+	cargar articulos de otro modulo.
 	"""
 	roles = set(frappe.get_roles())
-	if not roles & {
-		"System Manager", "SuperAdministrador Inventario", "Administrator",
-		"Admin TI", "Admin Cocina", "Admin General",
-	}:
-		frappe.throw("No tiene permiso para descargar la plantilla.")
+	full_access = roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}
+	own_module_role = _MODULE_TEMPLATE_ROLE.get(modulo)
+	if not full_access and own_module_role not in roles:
+		frappe.throw("No tiene permiso para descargar la plantilla de este modulo.")
 
 	contenido = generar_plantilla_csv(modulo)
 	frappe.response["type"] = "download"

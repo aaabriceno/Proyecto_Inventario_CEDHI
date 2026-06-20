@@ -1453,6 +1453,11 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _read_only_permission(select=1),
 		"System Manager": _full_permission(),
 	}
+	# Data Import nativo puede apuntar a CUALQUIER doctype del sistema: el
+	# `validate` hook en permissions.validate_data_import_module_scope (ver
+	# hooks.py) es lo que impide que un Admin de modulo lo use para tocar otros
+	# doctypes (User, Role, etc.) o filas de un modulo ajeno. Sin ese hook,
+	# este permiso por si solo seria un bypass total de las reglas de modulo.
 	data_import_perms = {
 		"SuperAdministrador Inventario": _manager_permission(),
 		"Admin TI": _manager_permission(),
@@ -2408,8 +2413,12 @@ frappe.ui.form.on('Articulo de Inventario', {
             frm.set_df_property('datos_generales_section', 'label', '🍳 Control de Gastronomía');
         }
 
-        // RF-GA-01: Quick movement button on Form View
-        if (!frm.is_new()) {
+        // RF-GA-01: Quick movement button on Form View.
+        // Solo se muestra si el rol puede crear Movimiento de Inventario: sin
+        // este chequeo, Revisor/Reportante verian el boton igual y solo al
+        // hacer click se enterarian (por el throw server-side en
+        // create_quick_movement) de que no tienen permiso.
+        if (!frm.is_new() && frappe.model.can_create('Movimiento de Inventario')) {
             frm.add_custom_button(__('Registrar Movimiento (Kardex)'), function() {
                 window.open_quick_kardex_dialog({
                     articulo: frm.doc.name,
@@ -2461,20 +2470,23 @@ frappe.listview_settings['Articulo de Inventario'].get_indicator = function(doc)
 frappe.listview_settings['Articulo de Inventario'].onload = function(listview) {
     window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
 
-    // RF-GA-01: Quick movement button on List View
-    listview.page.add_inner_button(__('Kardex Rápido (Cocina)'), function() {
-        let selected = listview.get_checked_items();
-        let art = '';
-        if (selected && selected.length > 0) {
-            art = selected[0].name;
-        }
-        window.open_quick_kardex_dialog({
-            articulo: art,
-            callback: function() {
-                listview.refresh();
+    // RF-GA-01: Quick movement button on List View (mismo chequeo de permiso
+    // que en la vista de formulario: Revisor/Reportante no deben verlo).
+    if (frappe.model.can_create('Movimiento de Inventario')) {
+        listview.page.add_inner_button(__('Kardex Rápido (Cocina)'), function() {
+            let selected = listview.get_checked_items();
+            let art = '';
+            if (selected && selected.length > 0) {
+                art = selected[0].name;
             }
+            window.open_quick_kardex_dialog({
+                articulo: art,
+                callback: function() {
+                    listview.refresh();
+                }
+            });
         });
-    });
+    }
 };
 frappe.listview_settings['Articulo de Inventario'].refresh = function(listview) {
     window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
@@ -3089,7 +3101,40 @@ def hide_unwanted_workspaces():
 
 	frappe.db.commit()
 	frappe.clear_cache()
-	return {"hidden_workspaces": workspaces_to_hide}
+	restricted = restrict_technical_workspaces()
+	return {"hidden_workspaces": workspaces_to_hide, "restricted_workspaces": restricted}
+
+
+def restrict_technical_workspaces():
+	"""Limita 'Build'/'Integrations' a roles tecnicos.
+
+	Sin roles asignados, un Workspace publico es visible para CUALQUIER
+	usuario con acceso al Desk. Build expone Custom Field/Server Script/Client
+	Script (un Admin de modulo podria romper la app por error) e Integrations
+	expone OAuth/SMS/LDAP (configuracion de todo el sistema, no de un modulo).
+	Ninguno le sirve a Admin TI/Cocina/General/Revisor/Reportante en su trabajo
+	diario, asi que los restringimos a los roles que ya administran el sistema.
+	'Tools' se deja sin restriccion: To Do/Calendar/Files si son utiles para
+	cualquier rol.
+	"""
+	technical_roles = [
+		{"role": "System Manager"},
+		{"role": "SuperAdministrador Inventario"},
+	]
+	results = {}
+	for ws_name in ("Build", "Integrations"):
+		if not frappe.db.exists("Workspace", ws_name):
+			continue
+		workspace = frappe.get_doc("Workspace", ws_name)
+		workspace.roles = []
+		for role in technical_roles:
+			workspace.append("roles", role)
+		workspace.save(ignore_permissions=True)
+		results[ws_name] = [r["role"] for r in technical_roles]
+
+	frappe.db.commit()
+	frappe.clear_cache()
+	return results
 
 
 def enforce_system_language():

@@ -286,3 +286,45 @@ def _has_inventory_module_permission(doc, ptype=None, user=None):
 def _reporter_location(user=None):
 	user = user or frappe.session.user
 	return frappe.db.get_value("User", user, "inventario_ubicacion_asignada")
+
+
+def validate_data_import_module_scope(doc, method=None):
+	"""Restringe Data Import nativo de Frappe para Admin TI/Cocina/General.
+
+	Data Import puede apuntar a cualquier doctype y, sin esta validacion, un
+	Admin de modulo (que tiene permiso de import en este doctype para poder
+	cargar CSV de su propia area) podria usarlo para tocar otros doctypes
+	(User, Role, etc.) o filas de un modulo que no es el suyo. Forzamos:
+	1. El doctype de referencia debe ser Articulo de Inventario.
+	2. Cada fila del CSV debe pertenecer a su modulo permitido (si la fila no
+	   trae modulo, se lo asignamos automaticamente).
+	"""
+	roles = _user_roles()
+	allowed_modules = MODULE_WRITE_ACCESS.get(
+		next(iter(roles & set(MODULE_WRITE_ACCESS)), None)
+	)
+	if not allowed_modules or roles & FULL_ACCESS_ROLES:
+		return
+
+	if doc.reference_doctype != "Articulo de Inventario":
+		frappe.throw(
+			frappe._("Solo puede importar datos de Articulo de Inventario."),
+			frappe.PermissionError,
+		)
+
+	if not (doc.import_file or doc.google_sheets_url):
+		return
+
+	allowed_module = next(iter(allowed_modules))
+	importer = doc.get_importer()
+	for payload in importer.import_file.get_payloads_for_import():
+		row_module = (payload.doc.get("modulo") or "").strip()
+		if row_module != allowed_module:
+			frappe.throw(
+				frappe._(
+					"La fila {0} debe tener modulo '{1}' (su rol solo puede "
+					"importar articulos de ese modulo). Incluya la columna "
+					"'modulo' con ese valor en cada fila."
+				).format(payload.rows[0].row_number, allowed_module),
+				frappe.PermissionError,
+			)
