@@ -185,3 +185,16 @@ if (window.frappe && typeof frappe.after_ajax === "function") {
     });
 }
 
+// Si un usuario cambia de sesion (logout/login) mientras el navegador todavia
+// tiene cargada una ruta a la que su rol no tiene acceso (ej. la pagina de
+// Usuarios abierta por el Superadmin), Frappe muestra "No tiene permiso para
+// ver esta pagina" en vez de llevarlo a su panel. Sobrescribimos el manejador
+// global para que en su lugar redirija al home configurado por rol
+// (role_home_page en hooks.py).
+if (window.frappe) {
+    frappe.show_not_permitted = function (page_name) {
+        const fallback_route = "app/inventario-cedhi";
+        frappe.set_route(fallback_route);
+    };
+}
+
