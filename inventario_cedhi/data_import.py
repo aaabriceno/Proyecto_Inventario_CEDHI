@@ -292,11 +292,20 @@ def _run_catalogo_inicial_job(only_module=None):
 
 @frappe.whitelist()
 def consultar_estado_catalogo_inicial():
-	"""Endpoint de polling para que la pagina sepa si el job ya termino."""
+	"""Endpoint de polling para que la pagina sepa si el job ya termino.
+
+	get_value(..., expires=True) es necesario: sin eso, RedisWrapper guarda el
+	valor leido en frappe.local.cache (memoria del proceso de gunicorn) y, si
+	ese mismo worker de gunicorn vuelve a atender un polling posterior, lee el
+	valor viejo de memoria en vez de volver a consultar Redis -- el resultado
+	real que el job de background si actualizo. Con multiples workers de
+	gunicorn, cada polling puede caer en un proceso distinto al que respondio
+	el primer POST, asi que sin expires=True el estado parecia nunca cambiar.
+	"""
 	roles = set(frappe.get_roles())
 	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
 		frappe.throw("No tiene permiso para consultar esta carga.")
-	return frappe.cache().get_value(_CATALOGO_INICIAL_CACHE_KEY) or {"status": "idle"}
+	return frappe.cache().get_value(_CATALOGO_INICIAL_CACHE_KEY, expires=True) or {"status": "idle"}
 
 
 # --- Exportador de plantilla de importacion para el CEDHI -------------------
