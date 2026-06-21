@@ -112,6 +112,43 @@ def ensure_inventory_module_def():
 	return {"created": True, "module": INVENTORY_MODULE}
 
 
+# Roles propios de la app + roles base de Frappe que la plataforma necesita
+# para funcionar (no son de ningun modulo de ERPNext, no se deben deshabilitar).
+_CEDHI_ROLES = {
+	"Admin TI", "Admin Cocina", "Admin General", "Revisor", "Reportante",
+	"SuperAdministrador Inventario",
+}
+_FRAPPE_CORE_ROLES = {
+	"Administrator", "System Manager", "All", "Guest", "Desk User",
+	"Website Manager", "Workspace Manager",
+}
+
+
+def disable_unused_erpnext_roles():
+	"""Deshabilita roles de modulos de ERPNext que el CEDHI no usa.
+
+	La app no usa Ventas/Compras/RRHH/Manufactura/Agricultura/etc, pero esos
+	~47 roles vienen instalados por ERPNext y aparecen en el selector al
+	crear/editar un usuario, generando confusion sobre cuales aplican al
+	inventario. Frappe excluye roles con disabled=1 del selector de roles
+	(ver Role.js/user_field_filter), por eso alcanza con deshabilitar en vez
+	de borrar: no rompe nada si algun doctype interno de ERPNext aun los
+	referencia, y es reversible.
+	"""
+	keep = _CEDHI_ROLES | _FRAPPE_CORE_ROLES
+	to_disable = frappe.get_all(
+		"Role",
+		filters={"name": ["not in", list(keep)], "disabled": 0},
+		pluck="name",
+	)
+	for role in to_disable:
+		frappe.db.set_value("Role", role, "disabled", 1, update_modified=False)
+
+	frappe.db.commit()
+	frappe.clear_cache()
+	return {"disabled_roles": to_disable}
+
+
 def create_ubicacion_doctype():
 	"""Create the Ubicacion DocType used as the physical inventory location."""
 	doctype_name = "Ubicacion"
@@ -3106,12 +3143,13 @@ def hide_unwanted_workspaces():
 
 
 def restrict_technical_workspaces():
-	"""Limita 'Build'/'Integrations' a roles tecnicos.
+	"""Limita 'Build'/'Integrations'/'Website' a roles tecnicos.
 
 	Sin roles asignados, un Workspace publico es visible para CUALQUIER
 	usuario con acceso al Desk. Build expone Custom Field/Server Script/Client
-	Script (un Admin de modulo podria romper la app por error) e Integrations
-	expone OAuth/SMS/LDAP (configuracion de todo el sistema, no de un modulo).
+	Script (un Admin de modulo podria romper la app por error), Integrations
+	expone OAuth/SMS/LDAP (configuracion de todo el sistema, no de un modulo),
+	y Website es gestion de paginas web/blog publico, ajeno al inventario.
 	Ninguno le sirve a Admin TI/Cocina/General/Revisor/Reportante en su trabajo
 	diario, asi que los restringimos a los roles que ya administran el sistema.
 	'Tools' se deja sin restriccion: To Do/Calendar/Files si son utiles para
@@ -3122,7 +3160,7 @@ def restrict_technical_workspaces():
 		{"role": "SuperAdministrador Inventario"},
 	]
 	results = {}
-	for ws_name in ("Build", "Integrations"):
+	for ws_name in ("Build", "Integrations", "Website"):
 		if not frappe.db.exists("Workspace", ws_name):
 			continue
 		workspace = frappe.get_doc("Workspace", ws_name)

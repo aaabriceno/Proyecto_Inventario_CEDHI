@@ -67,6 +67,7 @@ def ensure_runtime_configuration():
 
 	steps = [
 		("Module Def", setup.ensure_inventory_module_def),
+		("Disable Unused Roles", setup.disable_unused_erpnext_roles),
 		("Reporter User Fields", setup.configure_reporter_user_fields),
 		("Role Permissions", setup.configure_inventory_role_permissions),
 		("List Views", setup.configure_inventory_list_views),
