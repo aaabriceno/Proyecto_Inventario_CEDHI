@@ -383,7 +383,7 @@ body {
 }
 
 /* Inputs & Form Controls Styling */
-input.form-control, select.form-control, textarea.form-control, 
+input.form-control, select.form-control, textarea.form-control,
 .frappe-control input, .frappe-control select, .frappe-control textarea {
     border-radius: 8px !important;
     border: 1px solid var(--cedhi-border) !important;
@@ -393,6 +393,20 @@ input.form-control, select.form-control, textarea.form-control,
     color: var(--cedhi-text-main) !important;
     transition: var(--cedhi-transition) !important;
     box-shadow: none !important;
+}
+
+/* Valor "en reposo" de un campo (antes de hacer click para editar). Frappe
+   pinta esto con un <div class="control-value like-disabled-input"> separado
+   del <select>/<input> real, usando --disabled-text-color (gris de Frappe).
+   Sin forzar aqui el color de texto de la app, ese valor puede quedar
+   invisible sobre el fondo del tema CEDHI (ej. Modulo/Estado de un Articulo
+   de Inventario no se ve hasta hacer click para editar). */
+.control-value.like-disabled-input {
+    color: var(--cedhi-text-main) !important;
+    background-color: transparent !important;
+}
+.dark .control-value.like-disabled-input {
+    color: var(--cedhi-text-main) !important;
 }
 
 .dark input.form-control, .dark select.form-control, .dark textarea.form-control,
