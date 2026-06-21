@@ -26,9 +26,9 @@
     --cedhi-cyan: #48E1BE;
 
     /* Backgrounds & Surfaces (Light) */
-    --cedhi-bg: #f8fafc;
+    --cedhi-bg: #F4F6FA;
     --cedhi-surface: #ffffff;
-    --cedhi-border: rgba(226, 232, 240, 0.8);
+    --cedhi-border: #D0D8EE;
     --cedhi-border-focus: rgba(9, 58, 179, 0.5);
 
     /* Text (Light) - faltaba en modo claro: sin esto el navegador hereda
@@ -685,7 +685,9 @@ input.form-control:focus, select.form-control:focus, textarea.form-control:focus
     }
 }
 
-/* ── CUSTOM THEME OVERRIDES ── */
+/* ── CUSTOM THEME OVERRIDES ──
+   --cedhi-bg/--cedhi-border ya se definen arriba en el :root principal; no
+   se repiten aqui para que haya una sola fuente de verdad por variable. */
 :root {
   --cedhi-navy:       var(--cedhi-secondary);
   --cedhi-navy-dark:  #1C2E7A;
@@ -694,8 +696,6 @@ input.form-control:focus, select.form-control:focus, textarea.form-control:focus
   --cedhi-yellow:     var(--cedhi-warning);
   --cedhi-green:      var(--cedhi-success);
   --cedhi-cyan:       var(--cedhi-cyan);
-  --cedhi-bg:         #F4F6FA;
-  --cedhi-border:     #D0D8EE;
 }
 
 /* ── Tipografía global ── */
@@ -748,6 +748,11 @@ body, .frappe-app {
   color: var(--cedhi-navy) !important;
   border-left: 3px solid var(--cedhi-navy) !important;
   border-radius: 0 8px 8px 0 !important;
+}
+.dark .sidebar-item.selected > .standard-sidebar-item,
+.dark .sidebar-item:hover > .standard-sidebar-item {
+  background: rgba(72, 225, 190, 0.08) !important;
+  color: var(--cedhi-text-main) !important;
 }
 .sidebar-item .standard-sidebar-item {
   font-weight: 600;
@@ -802,6 +807,9 @@ body, .frappe-app {
   font-weight: 700 !important;
   color: var(--cedhi-navy) !important;
 }
+.dark .number-card .number {
+  color: var(--cedhi-text-main) !important;
+}
 
 /* ── Alertas / badges ── */
 .indicator-pill.red, .badge-danger {
@@ -821,9 +829,13 @@ body, .frappe-app {
   color: var(--cedhi-cyan) !important;
 }
 
-/* ── Encabezado de página ── */
+/* ── Encabezado de página ──
+   --cedhi-white no estaba definida en ningun :root, asi que el fallback
+   #fff se aplicaba siempre, incluso en modo oscuro (navy sobre blanco fijo
+   chocando con el resto del tema oscuro). Se usa --cedhi-surface, que ya
+   tiene su propio valor para .dark. */
 .page-head {
-  background: var(--cedhi-white, #fff) !important;
+  background: var(--cedhi-surface) !important;
   border-bottom: 1px solid var(--cedhi-border) !important;
 }
 .page-title .title-text {
@@ -831,14 +843,20 @@ body, .frappe-app {
   font-weight: 700 !important;
   color: var(--cedhi-navy) !important;
 }
+.dark .page-title .title-text {
+  color: var(--cedhi-text-main) !important;
+}
 
-/* ── Tarjetas / Cards ── */
+/* ── Tarjetas / Cards ──
+   background usa --cedhi-surface (no #fff fijo) para que en modo oscuro el
+   texto claro de Frappe siga teniendo contraste: #fff fijo + tema oscuro
+   dejaba el texto invisible (claro sobre blanco). */
 .widget.shortcut-widget-box,
 .widget.links-widget-box,
 .desk-card {
   border-radius: 12px !important;
   border: 1px solid var(--cedhi-border) !important;
-  background: #fff !important;
+  background: var(--cedhi-surface) !important;
 }
 .widget-head {
   background: var(--cedhi-surface) !important;
@@ -849,21 +867,33 @@ body, .frappe-app {
   color: var(--cedhi-navy) !important;
   font-size: 13px !important;
 }
+.dark .widget-head .widget-title {
+  color: var(--cedhi-text-main) !important;
+}
 
 /* ── Links de acceso rápido (shortcuts) ── */
 .shortcut-widget-box {
-  background: #fff !important;
+  background: var(--cedhi-surface) !important;
 }
 .shortcut-widget-box .shortcut-widget-link {
   color: var(--cedhi-navy) !important;
   font-weight: 600 !important;
 }
+.dark .shortcut-widget-box .shortcut-widget-link {
+  color: var(--cedhi-text-main) !important;
+}
 .shortcut-widget-box:hover {
   border-color: var(--cedhi-cyan) !important;
   background: #F0FAFD !important;
 }
+.dark .shortcut-widget-box:hover {
+  background: rgba(72, 225, 190, 0.08) !important;
+}
 .shortcut-widget-box:hover .shortcut-widget-link {
   color: var(--cedhi-navy) !important;
+}
+.dark .shortcut-widget-box:hover .shortcut-widget-link {
+  color: var(--cedhi-text-main) !important;
 }
 
 /* ── Tablas ── */
