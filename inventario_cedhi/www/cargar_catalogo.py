@@ -17,12 +17,18 @@ def get_context(context):
 
 	roles = set(frappe.get_roles())
 	context.puede_importar = bool(roles & ALLOWED_ROLES)
-	context.resultado = None
+	context.encolado = False
 
+	# La carga corre en background (ver data_import.encolar_catalogo_inicial):
+	# con ~1150 filas, ejecutarla dentro de este request HTTP excede el
+	# timeout de nginx en produccion. El POST solo encola el job; la pagina
+	# escucha el evento realtime "cedhi_catalogo_inicial_done" para mostrar
+	# el resultado sin que el usuario tenga que recargar.
 	if frappe.request and frappe.request.method == "POST" and context.puede_importar:
-		from inventario_cedhi.data_import import import_catalogo_inicial
+		from inventario_cedhi.data_import import encolar_catalogo_inicial
 
 		only_module = frappe.form_dict.get("modulo") or None
-		context.resultado = import_catalogo_inicial(only_module=only_module)
+		encolar_catalogo_inicial(only_module=only_module)
+		context.encolado = True
 
 	return context

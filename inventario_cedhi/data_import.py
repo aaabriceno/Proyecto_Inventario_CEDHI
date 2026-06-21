@@ -243,12 +243,60 @@ def importar_catalogo_inicial(only_module=None):
 	"""Endpoint llamable desde la UI (boton del workspace).
 
 	Solo SuperAdministrador / System Manager pueden ejecutarlo, ya que carga el
-	catalogo maestro.
+	catalogo maestro. Se encola en background (ver encolar_catalogo_inicial):
+	con ~1150 filas, correrlo dentro del request HTTP excede el timeout de
+	nginx en produccion (proxy_read_timeout) aunque localmente parezca rapido.
 	"""
 	roles = set(frappe.get_roles())
 	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
 		frappe.throw("No tiene permiso para importar el catalogo inicial.")
-	return import_catalogo_inicial(only_module=only_module)
+	return encolar_catalogo_inicial(only_module=only_module)
+
+
+_CATALOGO_INICIAL_CACHE_KEY = "cedhi_catalogo_inicial_status"
+
+
+def encolar_catalogo_inicial(only_module=None):
+	"""Encola el import en background y devuelve de inmediato.
+
+	El job real (_run_catalogo_inicial_job) corre fuera del request HTTP: con
+	~1150 filas, ejecutarlo dentro del request excede el timeout de nginx en
+	produccion (proxy_read_timeout) aunque localmente parezca rapido y termine
+	bien. El estado se guarda en cache (no hay cliente de socketio cargado en
+	esta pagina web publica) y se consulta por polling desde el frontend.
+	"""
+	frappe.cache().set_value(_CATALOGO_INICIAL_CACHE_KEY, {"status": "running"}, expires_in_sec=3600)
+	frappe.enqueue(
+		"inventario_cedhi.data_import._run_catalogo_inicial_job",
+		queue="long",
+		timeout=3600,
+		job_name="cargar_catalogo_inicial",
+		only_module=only_module,
+	)
+	return {"queued": True}
+
+
+def _run_catalogo_inicial_job(only_module=None):
+	"""Ejecuta el import real (llamado por el worker, no por el request HTTP)."""
+	try:
+		resumen = import_catalogo_inicial(only_module=only_module)
+		frappe.cache().set_value(
+			_CATALOGO_INICIAL_CACHE_KEY, {"status": "done", "resumen": resumen}, expires_in_sec=3600
+		)
+	except Exception:
+		frappe.log_error(title="Carga de catalogo inicial CEDHI", message=frappe.get_traceback())
+		frappe.cache().set_value(
+			_CATALOGO_INICIAL_CACHE_KEY, {"status": "error", "error": str(frappe.get_traceback())}, expires_in_sec=3600
+		)
+
+
+@frappe.whitelist()
+def consultar_estado_catalogo_inicial():
+	"""Endpoint de polling para que la pagina sepa si el job ya termino."""
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para consultar esta carga.")
+	return frappe.cache().get_value(_CATALOGO_INICIAL_CACHE_KEY) or {"status": "idle"}
 
 
 # --- Exportador de plantilla de importacion para el CEDHI -------------------
