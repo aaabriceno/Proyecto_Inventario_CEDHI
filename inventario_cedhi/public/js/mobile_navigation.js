@@ -269,3 +269,18 @@ if (window.frappe && frappe.app) {
     };
 }
 
+// Capa adicional al fix de arriba: si por cualquier otro medio (bookmark viejo,
+// JS cacheado en el navegador antes de este fix, URL pegada a mano) un usuario
+// del CEDHI llega a una ruta de doctype al que no tiene permiso real (ej.
+// /app/user/<otro-email> entrando como Admin Cocina), el backend responde con
+// PermissionError y Frappe solo muestra el modal de error nativo, sin redirigir.
+// frappe.request.on_error es el hook global que Frappe core llama para CUALQUIER
+// respuesta con ese exc_type, sin importar de que vista/doctype venga -- a
+// diferencia de show_not_permitted, que solo cubre el chequeo dentro de un form
+// ya renderizado.
+if (window.frappe && typeof frappe.request?.on_error === "function") {
+    frappe.request.on_error("PermissionError", function () {
+        frappe.set_route("app/inventario-cedhi");
+    });
+}
+

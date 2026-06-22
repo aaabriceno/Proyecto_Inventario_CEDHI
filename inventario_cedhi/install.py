@@ -77,6 +77,7 @@ def ensure_runtime_configuration():
 		("Child Workspaces", setup.create_child_workspaces),
 		("Hide Workspaces", setup.hide_unwanted_workspaces),
 		("Client Scripts", setup.create_inventory_client_scripts),
+		("Default Workspace Backfill", setup.backfill_default_workspace),
 	]
 
 	results = {}

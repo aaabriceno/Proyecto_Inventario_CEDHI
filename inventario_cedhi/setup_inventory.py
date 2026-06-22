@@ -3360,3 +3360,32 @@ body.login-page::before {
 		nav_settings.save(ignore_permissions=True)
 	except frappe.DoesNotExistError:
 		pass
+
+
+def backfill_default_workspace():
+	"""Asigna Workspace Inventario CEDHI a usuarios CEDHI ya existentes.
+
+	El hook validate (enforce_default_workspace en inventory_logic.py) solo
+	corre en el siguiente save() de cada User. Sin este backfill, un usuario
+	creado antes de ese hook se queda con default_workspace vacio y Frappe lo
+	manda a la "ultima vista visitada" (default real de User.default_workspace
+	cuando esta vacio) en vez de su panel de inventario.
+	"""
+	from inventario_cedhi.inventory_logic import CEDHI_ROLES
+
+	users = frappe.get_all(
+		"Has Role",
+		filters={"role": ["in", list(CEDHI_ROLES)], "parenttype": "User"},
+		pluck="parent",
+		distinct=True,
+	)
+	updated = []
+	for user in users:
+		if user in ("Administrator", "Guest"):
+			continue
+		current = frappe.db.get_value("User", user, "default_workspace")
+		if not current:
+			frappe.db.set_value("User", user, "default_workspace", "Inventario CEDHI", update_modified=False)
+			updated.append(user)
+	frappe.db.commit()
+	return {"updated_users": updated}

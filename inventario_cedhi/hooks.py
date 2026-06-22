@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/inventario_cedhi/css/inventario_cedhi_mobile.css?v=20260621_2"
-app_include_js = "/assets/inventario_cedhi/js/mobile_navigation.js?v=20260621_3"
+app_include_js = "/assets/inventario_cedhi/js/mobile_navigation.js?v=20260621_4"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/inventario_cedhi/css/inventario_cedhi.css"
@@ -180,7 +180,10 @@ doc_events = {
 	},
 	"User": {
 		"before_insert": "inventario_cedhi.inventory_logic.enforce_user_language",
-		"validate": "inventario_cedhi.inventory_logic.enforce_user_language",
+		"validate": [
+			"inventario_cedhi.inventory_logic.enforce_user_language",
+			"inventario_cedhi.inventory_logic.enforce_default_workspace",
+		],
 	},
 	"Data Import": {
 		# Admin TI/Cocina/General pueden usar Data Import nativo para cargas

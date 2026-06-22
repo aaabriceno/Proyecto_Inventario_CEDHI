@@ -175,6 +175,32 @@ def enforce_user_language(doc, method=None):
     doc.language = "es"
 
 
+CEDHI_ROLES = {
+    "SuperAdministrador Inventario",
+    "Admin TI",
+    "Admin Cocina",
+    "Admin General",
+    "Revisor",
+    "Reportante",
+}
+
+
+def enforce_default_workspace(doc, method=None):
+    """Fuerza que todo usuario del CEDHI aterrice en el workspace de inventario.
+
+    role_home_page (hooks.py) NO aplica a Desk/System Users (solo a Website
+    Users, ver frappe/www/login.py): para System Users, Frappe resuelve la
+    pagina tras login via User.default_workspace, y si esta vacio cae al
+    workspace por defecto del sitio (Home). Sin esto, cualquier usuario del
+    CEDHI sin default_workspace propio termina en /app/home en vez de su panel.
+    """
+    if doc.user_type != "System User":
+        return
+    roles = {r.role for r in doc.roles}
+    if roles & CEDHI_ROLES and not doc.default_workspace:
+        doc.default_workspace = "Inventario CEDHI"
+
+
 
 
 
