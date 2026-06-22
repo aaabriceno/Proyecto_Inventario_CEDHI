@@ -18,6 +18,7 @@ def get_context(context):
 	roles = set(frappe.get_roles())
 	context.puede_importar = bool(roles & ALLOWED_ROLES)
 	context.encolado = False
+	context.csrf_token = frappe.sessions.get_csrf_token()
 
 	# La carga corre en background (ver data_import.encolar_catalogo_inicial):
 	# con ~1150 filas, ejecutarla dentro de este request HTTP excede el

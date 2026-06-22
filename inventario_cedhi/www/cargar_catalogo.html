@@ -18,6 +18,7 @@
 		</div>
 	{% else %}
 		<form method="POST" action="/cargar_catalogo" id="cedhi-form-carga">
+			<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 			<div class="form-group" style="margin: 16px 0;">
 				<label for="modulo">Módulo a cargar</label>
 				<select name="modulo" id="modulo" class="form-control">
@@ -55,7 +56,7 @@
 
 	function consultar() {
 		fetch("/api/method/inventario_cedhi.data_import.consultar_estado_catalogo_inicial", {
-			headers: { "X-Frappe-CSRF-Token": "{{ frappe.session.csrf_token }}" },
+			headers: { "X-Frappe-CSRF-Token": "{{ csrf_token }}" },
 		})
 			.then(function (r) { return r.json(); })
 			.then(function (data) {

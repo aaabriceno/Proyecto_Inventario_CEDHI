@@ -253,35 +253,19 @@ if (window.frappe) {
     };
 }
 
-// El hash de la URL (#/app/user, etc.) vive en el navegador, no en la sesion.
-// Si el SuperAdmin cierra sesion estando en /app/user y otro usuario inicia
-// sesion despues, Frappe carga esa misma ruta para el usuario nuevo (el hash
-// no se limpia solo). Si esa ruta SI es accesible para el nuevo usuario -aunque
-// sea de forma filtrada, como ver su propio registro en Usuarios- no hay
-// PermissionError que interceptar, y el usuario nuevo termina viendo la
-// pantalla que dejo el anterior en vez de su panel de inventario.
-// Solucion: recordamos en localStorage que usuario dejo la ultima ruta; si al
-// cargar la app el usuario actual es distinto, forzamos ir al home del rol.
-(function enforce_home_route_on_user_change() {
-    const STORAGE_KEY = "cedhi_last_session_user";
-
-    function current_user() {
-        return (window.frappe && frappe.session && frappe.session.user) || null;
-    }
-
-    function go_home_and_track() {
-        const user = current_user();
-        if (!user || user === "Guest") return;
-
-        const last_user = window.localStorage.getItem(STORAGE_KEY);
-        if (last_user && last_user !== user) {
-            frappe.set_route("app/inventario-cedhi");
-        }
-        window.localStorage.setItem(STORAGE_KEY, user);
-    }
-
-    if (window.frappe && typeof frappe.after_ajax === "function") {
-        frappe.after_ajax(go_home_and_track);
-    }
-})();
+// Bug real: Application.redirect_to_login() (frappe/public/js/frappe/desk.js)
+// manda a /login?redirect-to=<pathname+search actual>. Si el SuperAdmin cierra
+// sesion estando en /app/user, el navegador queda en /login?redirect-to=/app/user.
+// login.py reusa ESE redirect-to para el SIGUIENTE login en la misma pestana: si
+// la ruta vieja es accesible para el usuario nuevo (aunque sea filtrada, como ver
+// su propio registro en Usuarios), no hay PermissionError que interceptar y el
+// usuario nuevo cae directo en la pantalla que dejo el anterior. No es un bug del
+// hash de la URL: el pathname real viaja en la querystring del logout.
+// Solucion: forzamos que el logout de este sistema siempre limpie el redirect-to,
+// para que el siguiente login caiga en /app (y de ahi a su role_home_page).
+if (window.frappe && frappe.app) {
+    frappe.app.redirect_to_login = function () {
+        window.location.href = "/login";
+    };
+}
 

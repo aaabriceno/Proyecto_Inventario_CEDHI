@@ -2,6 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
+ "autoname": "field:nombre_asignacion",
  "creation": "2026-04-25 21:16:59.908055",
  "doctype": "DocType",
  "engine": "InnoDB",
