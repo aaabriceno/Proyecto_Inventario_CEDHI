@@ -75,8 +75,13 @@ def set_internal_code(doc, method=None):
 
 def validate_stock_on_movement(doc, method=None):
     """Validación Estricta: Previene salidas de stock mayores al stock actual."""
-    if doc.cantidad is not None and doc.cantidad <= 0:
+    # En Ajuste, cantidad es el stock TOTAL nuevo (no un delta): 0 es valido
+    # (ej. perdida total confirmada). En Entrada/Salida, cantidad es un delta
+    # y 0/negativo no tiene sentido.
+    if doc.tipo_movimiento != "Ajuste" and doc.cantidad is not None and doc.cantidad <= 0:
         frappe.throw(_("La cantidad debe ser mayor a cero."))
+    elif doc.tipo_movimiento == "Ajuste" and doc.cantidad is not None and doc.cantidad < 0:
+        frappe.throw(_("La cantidad no puede ser negativa."))
 
     if doc.tipo_movimiento == "Salida" and doc.articulo:
         stock_actual = frappe.db.get_value("Articulo de Inventario", doc.articulo, "stock_actual") or 0
@@ -125,28 +130,17 @@ def update_stock_on_movement(doc, method=None):
 def reverse_stock_on_cancel(doc, method=None):
     """Reverse the stock update if a movement is cancelled.
 
-    Usa el snapshot guardado en update_stock_on_movement (stock_antes_del_movimiento)
-    en vez de recalcular: si hubo movimientos posteriores sobre el mismo
-    articulo, recalcular daria un valor incorrecto.
+    Usa el snapshot guardado en update_stock_on_movement (stock_antes_del_movimiento):
+    si hubo movimientos posteriores sobre el mismo articulo, recalcular en vez
+    de usar el snapshot daria un valor incorrecto. Movimientos anteriores a la
+    introduccion de este snapshot se completan via el patch
+    backfill_stock_antes_del_movimiento durante la migracion.
     """
     if not doc.articulo:
         return
 
+    prev_stock = doc.stock_antes_del_movimiento or 0
     articulo = frappe.get_doc("Articulo de Inventario", doc.articulo)
-    prev_stock = doc.stock_antes_del_movimiento
-    if prev_stock is None:
-        # Movimientos creados antes de este fix no tienen el snapshot: hacemos
-        # el mejor esfuerzo recalculando (comportamiento legacy).
-        adjustment = doc.cantidad
-        if doc.tipo_movimiento == "Entrada":
-            adjustment = -adjustment
-        elif doc.tipo_movimiento == "Ajuste":
-            prev_stock = None
-        if prev_stock is None and doc.tipo_movimiento != "Ajuste":
-            prev_stock = (articulo.stock_actual or 0) + adjustment
-        else:
-            prev_stock = articulo.stock_actual or 0
-
     articulo.db_set("stock_actual", prev_stock)
     articulo.add_comment("Comment", _("Movimiento {0} cancelado. Stock revertido a {1}").format(
         doc.name, prev_stock
