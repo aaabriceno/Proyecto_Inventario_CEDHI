@@ -75,66 +75,81 @@ def set_internal_code(doc, method=None):
 
 def validate_stock_on_movement(doc, method=None):
     """Validación Estricta: Previene salidas de stock mayores al stock actual."""
+    if doc.cantidad is not None and doc.cantidad <= 0:
+        frappe.throw(_("La cantidad debe ser mayor a cero."))
+
     if doc.tipo_movimiento == "Salida" and doc.articulo:
         stock_actual = frappe.db.get_value("Articulo de Inventario", doc.articulo, "stock_actual") or 0
         if doc.cantidad > stock_actual:
             frappe.throw(_("Operación bloqueada: No hay suficiente stock. Intentas retirar {0} unidades, pero el stock actual es de solo {1} unidades.").format(doc.cantidad, stock_actual))
 
+
 def update_stock_on_movement(doc, method=None):
-    """Update stock_actual in Articulo de Inventario when a movement is submitted."""
+    """Update stock_actual in Articulo de Inventario when a movement is submitted.
+
+    Guarda stock_antes_del_movimiento/stock_despues_del_movimiento como
+    snapshot real (no fetch_from, que se recalcularia con el valor actual al
+    leer el doc despues): reverse_stock_on_cancel necesita el delta EXACTO
+    aplicado por este movimiento especifico, no un recalculo basado en el
+    stock de hoy, que puede ya estar afectado por movimientos posteriores.
+    """
     if not doc.articulo:
         return
 
     articulo = frappe.get_doc("Articulo de Inventario", doc.articulo)
-    
-    # Calculate adjustment
-    adjustment = doc.cantidad
+    stock_antes = articulo.stock_actual or 0
+
     if doc.tipo_movimiento == "Salida":
-        adjustment = -adjustment
+        adjustment = -doc.cantidad
     elif doc.tipo_movimiento == "Ajuste":
         # Ajuste sets the stock directly to doc.cantidad
-        current_stock = articulo.stock_actual or 0
-        adjustment = doc.cantidad - current_stock
-        
-    # Validación estricta ya ocurre en `validate` (validate_stock_on_movement)
-    # Por lo que aquí asumimos que el stock es correcto.
+        adjustment = doc.cantidad - stock_antes
+    else:
+        adjustment = doc.cantidad
 
-    new_stock = (articulo.stock_actual or 0) + adjustment
-    
-    # Update the article
+    new_stock = stock_antes + adjustment
+    if new_stock < 0:
+        frappe.throw(
+            _("Operación bloqueada: el stock resultante seria negativo ({0}).").format(new_stock)
+        )
+
     articulo.db_set("stock_actual", new_stock)
-    
-    # Log the change in the article's comments/timeline
+    doc.db_set("stock_antes_del_movimiento", stock_antes, update_modified=False)
+    doc.db_set("stock_despues_del_movimiento", new_stock, update_modified=False)
+
     articulo.add_comment("Comment", _("Stock actualizado a {0} ({1} por {2})").format(
         new_stock, doc.tipo_movimiento, doc.name
     ))
 
+
 def reverse_stock_on_cancel(doc, method=None):
-    """Reverse the stock update if a movement is cancelled."""
+    """Reverse the stock update if a movement is cancelled.
+
+    Usa el snapshot guardado en update_stock_on_movement (stock_antes_del_movimiento)
+    en vez de recalcular: si hubo movimientos posteriores sobre el mismo
+    articulo, recalcular daria un valor incorrecto.
+    """
     if not doc.articulo:
         return
 
     articulo = frappe.get_doc("Articulo de Inventario", doc.articulo)
-    
-    if doc.tipo_movimiento == "Ajuste":
-        # Revert back to the stock value before this adjustment was submitted
-        prev_stock = doc.stock_actual_articulo or 0
-        articulo.db_set("stock_actual", prev_stock)
-        articulo.add_comment("Comment", _("Movimiento {0} cancelado. Stock revertido a {1} (anterior al Ajuste)").format(
-            doc.name, prev_stock
-        ))
-        return
+    prev_stock = doc.stock_antes_del_movimiento
+    if prev_stock is None:
+        # Movimientos creados antes de este fix no tienen el snapshot: hacemos
+        # el mejor esfuerzo recalculando (comportamiento legacy).
+        adjustment = doc.cantidad
+        if doc.tipo_movimiento == "Entrada":
+            adjustment = -adjustment
+        elif doc.tipo_movimiento == "Ajuste":
+            prev_stock = None
+        if prev_stock is None and doc.tipo_movimiento != "Ajuste":
+            prev_stock = (articulo.stock_actual or 0) + adjustment
+        else:
+            prev_stock = articulo.stock_actual or 0
 
-    # Calculate reverse adjustment
-    adjustment = doc.cantidad
-    if doc.tipo_movimiento == "Entrada":
-        adjustment = -adjustment
-        
-    new_stock = (articulo.stock_actual or 0) + adjustment
-    articulo.db_set("stock_actual", new_stock)
-    
+    articulo.db_set("stock_actual", prev_stock)
     articulo.add_comment("Comment", _("Movimiento {0} cancelado. Stock revertido a {1}").format(
-        doc.name, new_stock
+        doc.name, prev_stock
     ))
 
 

@@ -9,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "datos_movimiento_section",
+  "scan_barcode",
   "articulo",
   "tipo_movimiento",
   "cantidad",
@@ -18,13 +19,22 @@
   "motivo",
   "amended_from",
   "estado_actual",
-  "stock_actual_articulo"
+  "stock_actual_articulo",
+  "stock_antes_del_movimiento",
+  "stock_despues_del_movimiento"
  ],
  "fields": [
   {
    "fieldname": "datos_movimiento_section",
    "fieldtype": "Section Break",
    "label": "Datos del Movimiento"
+  },
+  {
+   "description": "Escanea el codigo de barras para seleccionar el articulo automaticamente",
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "label": "Escanear Codigo (Opcional)",
+   "options": "Barcode"
   },
   {
    "fieldname": "articulo",
@@ -101,6 +111,22 @@
    "fieldname": "stock_actual_articulo",
    "fieldtype": "Float",
    "label": "Stock actual del articulo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_antes_del_movimiento",
+   "fieldtype": "Float",
+   "label": "Stock antes del movimiento",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_despues_del_movimiento",
+   "fieldtype": "Float",
+   "label": "Stock despues del movimiento",
+   "no_copy": 1,
+   "print_hide": 1,
    "read_only": 1
   }
  ],

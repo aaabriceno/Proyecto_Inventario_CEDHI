@@ -100,9 +100,12 @@ def _find_existing_gastronomy(row):
 	nombre = _norm(row.get("nombre_articulo"))
 	grupo = _norm(row.get("grupo"))
 	categoria = _norm(row.get("categoria"))
+	# Filtro case-insensitive: el match exacto (con normalizacion completa) se
+	# hace abajo en Python. Un filtro exacto aqui (ej. nombre_articulo="Arroz")
+	# no encontraria un candidato guardado como "ARROZ", generando un duplicado.
 	candidates = frappe.get_all(
 		"Articulo de Inventario",
-		filters={"modulo": "Gastronomia", "nombre_articulo": row.get("nombre_articulo", "").strip()},
+		filters={"modulo": "Gastronomia", "nombre_articulo": ["like", nombre]},
 		fields=["name", "nombre_articulo", "grupo", "categoria"],
 	)
 	for c in candidates:
