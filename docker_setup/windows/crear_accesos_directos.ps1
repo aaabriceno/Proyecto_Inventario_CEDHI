@@ -1,6 +1,7 @@
-# Crea los 2 accesos directos del escritorio pedidos para el CEDHI:
-#   1. "Iniciar Sistema CEDHI"  -> corre iniciar_sistema.bat (levanta Docker + abre el navegador)
-#   2. "ERPNext CEDHI"          -> abre la app ya corriendo en modo ventana limpia (sin barra de navegador)
+# Crea los 3 accesos directos del escritorio pedidos para el CEDHI:
+#   1. "Iniciar Sistema CEDHI"   -> corre iniciar_sistema.bat (levanta Docker + abre el navegador)
+#   2. "ERPNext CEDHI"           -> abre la app ya corriendo en modo ventana limpia (sin barra de navegador)
+#   3. "Actualizar Sistema CEDHI" -> corre actualizar_sistema.bat (descarga la version mas reciente)
 # Ejecutar UNA SOLA VEZ en la laptop del CEDHI (clic derecho > Ejecutar con PowerShell).
 
 $ErrorActionPreference = "Stop"
@@ -50,7 +51,16 @@ if (Test-Path $IconPath) { $Shortcut2.IconLocation = $IconPath }
 $Shortcut2.Description = "Abre el Sistema de Inventario CEDHI"
 $Shortcut2.Save()
 
+# Acceso directo 3: Actualizar Sistema (descarga la version mas reciente)
+$Shortcut3 = $WshShell.CreateShortcut("$Desktop\Actualizar Sistema CEDHI.lnk")
+$Shortcut3.TargetPath = Join-Path $ScriptDir "actualizar_sistema.bat"
+$Shortcut3.WorkingDirectory = $ScriptDir
+if (Test-Path $IconPath) { $Shortcut3.IconLocation = $IconPath }
+$Shortcut3.Description = "Descarga e instala la version mas reciente del Sistema de Inventario CEDHI (no borra datos)"
+$Shortcut3.Save()
+
 Write-Host ""
-Write-Host "Listo. Se crearon 2 accesos directos en el Escritorio:"
-Write-Host "  1. Iniciar Sistema CEDHI  (doble clic para encender el sistema)"
-Write-Host "  2. ERPNext CEDHI          (doble clic para abrir la app, una vez encendida)"
+Write-Host "Listo. Se crearon 3 accesos directos en el Escritorio:"
+Write-Host "  1. Iniciar Sistema CEDHI     (doble clic para encender el sistema)"
+Write-Host "  2. ERPNext CEDHI             (doble clic para abrir la app, una vez encendida)"
+Write-Host "  3. Actualizar Sistema CEDHI  (doble clic solo cuando haya una version nueva)"

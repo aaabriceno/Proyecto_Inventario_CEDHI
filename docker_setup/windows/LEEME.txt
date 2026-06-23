@@ -54,7 +54,38 @@ SI ALGO FALLA:
 
 - Revise que Docker Desktop este abierto y con la ballena en verde antes de
   usar "Iniciar Sistema CEDHI".
-- Si el navegador no abre solo, vaya manualmente a: http://localhost:8080
+- Si el navegador no abre solo, vaya manualmente a: http://inventario.localhost:8080
 - Para ver el detalle de lo que esta pasando, abra PowerShell, entre a la
   carpeta docker_setup, y corra:
     docker compose logs --tail 50
+
+ACTUALIZAR EL SISTEMA A UNA VERSION NUEVA:
+
+Cuando se corrigen errores o se agregan funciones nuevas al sistema, hay que
+actualizar la copia instalada en esta PC. El "Iniciar Sistema CEDHI" NO
+actualiza nada por si solo (solo prende lo que ya esta instalado), asi que
+hay que hacer esto manualmente cada vez que haya una version nueva:
+
+1. Cierre el sistema si esta abierto (puede dejar Docker Desktop corriendo).
+
+2. Abra PowerShell y entre a la carpeta docker_setup (la carpeta que contiene
+   compose.yaml, NO la carpeta "windows"). Por ejemplo:
+     cd C:\CEDHI\docker_setup
+
+3. Descargue la version nueva del programa y reconstruya la imagen sin usar
+   nada guardado en cache (esto es necesario porque el sistema descarga el
+   codigo mas reciente desde internet al reconstruir):
+     docker compose build --no-cache
+     docker compose up -d
+
+4. Aplique los cambios a la base de datos ya existente (esto NO borra ningun
+   dato, solo actualiza la estructura/reglas del sistema):
+     docker compose exec backend bench --site inventario.localhost migrate
+
+5. Espere a que el comando anterior termine sin errores (puede tardar un
+   par de minutos) y vuelva a usar "Iniciar Sistema CEDHI" normalmente.
+
+IMPORTANTE: nunca corra "docker compose down -v" (con la "-v") para
+actualizar. Eso SI borra todos los datos del inventario (articulos,
+movimientos, usuarios) de forma permanente. Para actualizar basta con los
+4 comandos de arriba, que no tocan los datos guardados.
