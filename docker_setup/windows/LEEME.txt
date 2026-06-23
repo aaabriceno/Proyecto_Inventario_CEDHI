@@ -1,0 +1,60 @@
+Sistema de Inventario CEDHI - Instalacion en Windows
+======================================================
+
+REQUISITOS PREVIOS (una sola vez, antes de instalar):
+
+1. Windows 10/11 (Pro, Home o Education) en una maquina FISICA, no en una
+   maquina virtual anidada (VirtualBox/VMware dentro de otra VM es inestable
+   para esto).
+
+2. Virtualizacion habilitada en el BIOS/UEFI de la maquina:
+   - Reinicie la PC, entre al BIOS (tecla F2/F10/DEL/ESC segun el fabricante).
+   - Busque la opcion "Intel VT-x", "AMD-V" o "Virtualization Technology" y
+     habilitela si no lo esta.
+   - Guarde y reinicie.
+
+3. Instalar Docker Desktop:
+   - Descargar de: https://www.docker.com/products/docker-desktop/
+   - Instalar con las opciones por defecto (deje marcado "Use WSL 2").
+   - Reiniciar la PC si lo pide.
+   - Abrir Docker Desktop UNA VEZ manualmente, aceptar los terminos, y esperar
+     a que el icono de la ballena (en la barra de tareas, abajo a la derecha)
+     quede en verde y estable, SIN animacion de carga.
+
+INSTALACION DEL SISTEMA (una sola vez):
+
+1. Copie esta carpeta completa (docker_setup) a la PC, por ejemplo en
+   C:\CEDHI\docker_setup
+
+2. Dentro de la carpeta "windows", clic derecho sobre
+   crear_accesos_directos.ps1 -> "Ejecutar con PowerShell".
+   (Si Windows bloquea la ejecucion, abra PowerShell y corra:
+   powershell -ExecutionPolicy Bypass -File crear_accesos_directos.ps1)
+
+3. Deberian aparecer 2 iconos nuevos en el Escritorio:
+   - "Iniciar Sistema CEDHI"
+   - "ERPNext CEDHI"
+
+USO DIARIO:
+
+1. Doble clic en "Iniciar Sistema CEDHI" para encender el sistema.
+   - La PRIMERA VEZ tarda varios minutos (descarga e instala todo).
+   - Las siguientes veces es mucho mas rapido (solo levanta lo que ya esta
+     instalado).
+   - Cuando termine, se abre el navegador automaticamente.
+
+2. Doble clic en "ERPNext CEDHI" para volver a abrir la aplicacion en
+   cualquier momento (si el sistema ya esta encendido).
+
+3. Para apagar el sistema al final del dia (libera recursos de la PC), abra
+   Docker Desktop y presione "Quit Docker Desktop", o deje la PC encendida
+   si se va a usar nuevamente pronto.
+
+SI ALGO FALLA:
+
+- Revise que Docker Desktop este abierto y con la ballena en verde antes de
+  usar "Iniciar Sistema CEDHI".
+- Si el navegador no abre solo, vaya manualmente a: http://localhost:8080
+- Para ver el detalle de lo que esta pasando, abra PowerShell, entre a la
+  carpeta docker_setup, y corra:
+    docker compose logs --tail 50
