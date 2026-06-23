@@ -2867,19 +2867,17 @@ def create_inventory_workspace():
 
 		{"id": "s2", "type": "spacer", "data": {"col": 12}},
 
-		# Row 4: Shortcuts & Actions
-		{"id": "sh1", "type": "shortcut", "data": {"shortcut_name": "REPORTE MAESTRO (EXCEL)", "col": 6}},
-		{"id": "sh2", "type": "shortcut", "data": {"shortcut_name": "CARGAR CATÁLOGO INICIAL", "col": 6}},
-		{"id": "sh3", "type": "shortcut", "data": {"shortcut_name": "PLANTILLA GASTRONOMÍA", "col": 4}},
-		{"id": "sh4", "type": "shortcut", "data": {"shortcut_name": "PLANTILLA TI", "col": 4}},
-		{"id": "sh5", "type": "shortcut", "data": {"shortcut_name": "PLANTILLA GENERAL", "col": 4}},
-
-		{"id": "s3", "type": "spacer", "data": {"col": 12}},
-
-		# Row 5: Navigation Cards
+		# Row 4: Navigation Card
+		# Una card en Frappe Workspace renderiza los links de su propio Card
+		# Break (no es un boton suelto): solo se deja la de "Operaciones" aqui
+		# porque sus 3 links (Catalogo/Kardex/Incidencias) los pueden ver los 7
+		# roles del CEDHI por igual. "Reportes" y "Configuración" quedan fuera
+		# del padre, ya que antes mostraban a TODOS sus links (carga de
+		# catalogo, plantillas, gestion de usuarios) sin respetar que solo
+		# ciertos roles tienen acceso real -- esa navegacion ya existe filtrada
+		# por rol en el sidebar (cada uno es un workspace hijo con su propio
+		# campo roles).
 		{"id": "c1", "type": "card", "data": {"card_name": "Operaciones", "col": 4}},
-		{"id": "c2", "type": "card", "data": {"card_name": "Reportes", "col": 4}},
-		{"id": "c3", "type": "card", "data": {"card_name": "Configuración", "col": 4}},
 
 		{"id": "s3", "type": "spacer", "data": {"col": 12}},
 
@@ -2892,61 +2890,15 @@ def create_inventory_workspace():
 		{"id": "ch_alertas_estado", "type": "chart", "data": {"chart_name": "Alertas por Estado", "col": 6}},
 	]
 
-	# Define Links grouped using Card Breaks sequential rows (Frappe v15 format)
+	# Solo el Card Break de "Operaciones" (visible a los 7 roles del CEDHI).
+	# Reportes y Configuración ya no se repiten aqui -- ver comentario arriba.
 	links = [
-		# Operaciones Card Break
 		{"label": "Operaciones", "type": "Card Break"},
 		{"label": "Catálogo Maestro", "link_to": "Articulo de Inventario", "link_type": "DocType", "type": "Link"},
 		{"label": "Kardex Digital", "link_to": "Movimiento de Inventario", "link_type": "DocType", "type": "Link"},
 		{"label": "Incidencias", "link_to": "Alerta de Inventario", "link_type": "DocType", "type": "Link"},
-
-		# Reportes Card Break
-		{"label": "Reportes", "type": "Card Break"},
-		{"label": "Reporte Maestro (Excel)", "link_to": "Reporte Maestro de Inventario", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
-		{"label": "Bandeja de Alertas", "link_to": "Bandeja de Alertas CEDHI", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Alerta de Inventario"},
-		{"label": "Kardex de Movimientos", "link_to": "Kardex de Movimientos", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Movimiento de Inventario"},
-		{"label": "Stock Crítico", "link_to": "Stock Critico Gastronomia", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
-		{"label": "Resumen por Área", "link_to": "Resumen Inventario por Modulo", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
-
-		# Configuración Card Break
-		{"label": "Configuración", "type": "Card Break"},
-		{"label": "Espacios Físicos", "link_to": "Ubicacion", "link_type": "DocType", "type": "Link"},
-		{"label": "Importación Masiva", "link_to": "Data Import", "link_type": "DocType", "type": "Link"},
-		{"label": "Gestión de Usuarios", "link_to": "User", "link_type": "DocType", "type": "Link"},
 	]
-
-	shortcuts = [
-		{
-			"type": "URL",
-			"url": "/app/query-report/Reporte Maestro de Inventario",
-			"label": "REPORTE MAESTRO (EXCEL)",
-			"color": "Green",
-		},
-		{
-			"type": "URL",
-			"url": "/cargar_catalogo",
-			"label": "CARGAR CATÁLOGO INICIAL",
-			"color": "Blue",
-		},
-		{
-			"type": "URL",
-			"url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=Gastronomia",
-			"label": "PLANTILLA GASTRONOMÍA",
-			"color": "Orange",
-		},
-		{
-			"type": "URL",
-			"url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=TI",
-			"label": "PLANTILLA TI",
-			"color": "Orange",
-		},
-		{
-			"type": "URL",
-			"url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=General",
-			"label": "PLANTILLA GENERAL",
-			"color": "Orange",
-		},
-	]
+	shortcuts = []
 
 	roles = [
 		{"role": "System Manager"},
