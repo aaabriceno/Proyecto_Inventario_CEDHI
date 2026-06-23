@@ -3016,7 +3016,17 @@ def create_child_workspaces():
 				{"label": "Espacios Físicos", "link_to": "Ubicacion", "link_type": "DocType", "type": "Link"},
 				{"label": "Importación Masiva", "link_to": "Data Import", "link_type": "DocType", "type": "Link"},
 				{"label": "Gestión de Usuarios", "link_to": "User", "link_type": "DocType", "type": "Link"},
-			]
+			],
+			# Solo visibles en este workspace (roles de arriba: sin Revisor ni
+			# Reportante), a diferencia del padre que antes los mostraba a los 7
+			# roles del CEDHI por igual aunque solo SuperAdmin/System Manager
+			# pueden ejecutar la carga de catalogo (ver data_import.py).
+			"shortcuts": [
+				{"type": "URL", "url": "/cargar_catalogo", "label": "CARGAR CATÁLOGO INICIAL", "color": "Blue"},
+				{"type": "URL", "url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=Gastronomia", "label": "PLANTILLA GASTRONOMÍA", "color": "Orange"},
+				{"type": "URL", "url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=TI", "label": "PLANTILLA TI", "color": "Orange"},
+				{"type": "URL", "url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=General", "label": "PLANTILLA GENERAL", "color": "Orange"},
+			],
 		}
 	]
 
@@ -3026,15 +3036,20 @@ def create_child_workspaces():
 			workspace = frappe.get_doc("Workspace", ws_name)
 			workspace.links = []
 			workspace.roles = []
+			workspace.shortcuts = []
 			created = False
 		else:
 			workspace = frappe.get_doc({"doctype": "Workspace", "label": ws_name, "title": ws_name})
 			created = True
 
+		page_shortcuts = page.get("shortcuts", [])
+
 		content = [
 			{"id": "header", "type": "header", "data": {"text": page["banner_text"], "col": 12}},
-			{"id": "card_break", "type": "card", "data": {"card_name": page["links"][0]["label"], "col": 12}}
 		]
+		for i, shortcut in enumerate(page_shortcuts):
+			content.append({"id": f"sh{i}", "type": "shortcut", "data": {"shortcut_name": shortcut["label"], "col": 4}})
+		content.append({"id": "card_break", "type": "card", "data": {"card_name": page["links"][0]["label"], "col": 12}})
 
 		workspace.update({
 			"label": ws_name,
@@ -3051,6 +3066,8 @@ def create_child_workspaces():
 
 		for link in page["links"]:
 			workspace.append("links", link)
+		for shortcut in page_shortcuts:
+			workspace.append("shortcuts", shortcut)
 		for r in page["roles"]:
 			workspace.append("roles", {"role": r})
 
