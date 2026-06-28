@@ -49,6 +49,7 @@ def setup_inventory_mvp():
 	"""Create and configure the complete MVP structure in the right order."""
 	results = {}
 	results["ERPNext Setup"] = complete_erpnext_setup()
+	results["Initial Modules"] = ensure_initial_modules()
 	results["Core DocTypes"] = create_core_inventory_doctypes()
 	results["Reference Data"] = ensure_initial_reference_data()
 	results["Gastronomy Fields"] = add_gastronomy_catalog_fields()
@@ -112,12 +113,6 @@ def ensure_inventory_module_def():
 	return {"created": True, "module": INVENTORY_MODULE}
 
 
-# Roles propios de la app + roles base de Frappe que la plataforma necesita
-# para funcionar (no son de ningun modulo de ERPNext, no se deben deshabilitar).
-_CEDHI_ROLES = {
-	"Admin TI", "Admin Cocina", "Admin General", "Revisor", "Reportante",
-	"SuperAdministrador Inventario",
-}
 _FRAPPE_CORE_ROLES = {
 	"Administrator", "System Manager", "All", "Guest", "Desk User",
 	"Website Manager", "Workspace Manager",
@@ -134,8 +129,16 @@ def disable_unused_erpnext_roles():
 	(ver Role.js/user_field_filter), por eso alcanza con deshabilitar en vez
 	de borrar: no rompe nada si algun doctype interno de ERPNext aun los
 	referencia, y es reversible.
+
+	`keep` usa _cedhi_roles() (dinamico, ver inventory_logic.py) en vez de un
+	set fijo: un Role "Admin {modulo}" creado despues (ej. Admin Estilismo)
+	NO debe quedar deshabilitado en el siguiente migrate -- bug real pisado
+	en esta sesion, "Admin Estilismo"/"Admin Mobiliaria" quedaron
+	disabled=1 por este mismo set fijo antes de este fix.
 	"""
-	keep = _CEDHI_ROLES | _FRAPPE_CORE_ROLES
+	from inventario_cedhi.inventory_logic import _cedhi_roles
+
+	keep = _cedhi_roles() | _FRAPPE_CORE_ROLES
 	to_disable = frappe.get_all(
 		"Role",
 		filters={"name": ["not in", list(keep)], "disabled": 0},
@@ -169,14 +172,11 @@ def create_ubicacion_doctype():
 		{
 			"fieldname": "modulo",
 			"label": "Modulo",
-			"fieldtype": "Select",
-			"options": "TI\nGastronomia\nGeneral",
-			"reqd": 1,
+			"fieldtype": "Link",
+			"options": "Modulo",
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 		},
-		{"fieldname": "pabellon", "label": "Pabellon", "fieldtype": "Data"},
-		{"fieldname": "aula", "label": "Aula", "fieldtype": "Data"},
 		{
 			"fieldname": "activo",
 			"label": "Activo",
@@ -210,9 +210,8 @@ def create_asignacion_doctype():
 		{
 			"fieldname": "modulo",
 			"label": "Modulo",
-			"fieldtype": "Select",
-			"options": "TI\nGastronomia\nGeneral",
-			"reqd": 1,
+			"fieldtype": "Link",
+			"options": "Modulo",
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 		},
@@ -259,8 +258,8 @@ def create_articulo_inventario_doctype():
 		{
 			"fieldname": "modulo",
 			"label": "Modulo",
-			"fieldtype": "Select",
-			"options": "TI\nGastronomia\nGeneral",
+			"fieldtype": "Link",
+			"options": "Modulo",
 			"reqd": 1,
 			"in_list_view": 1,
 			"in_standard_filter": 1,
@@ -474,81 +473,40 @@ def add_gastronomy_catalog_fields():
 
 
 def configure_module_specific_article_form():
-	"""Show article fields by inventory module and add General-module fields."""
+	"""Oculta los campos de insumos perecibles (Gastronomia), sin uso por ahora.
+
+	Con modulos creables dinamicamente ya no hay un set fijo de 3 modulos
+	para condicionar `depends_on` por nombre exacto (`eval:doc.modulo=="TI"`
+	etc): todos los modulos comparten el mismo set de campos fisicos
+	(marca, modelo, cantidad, estado_conservacion), siempre visibles. Los
+	campos de insumos perecibles (stock, grupo, categoria, etc) quedan
+	ocultos (`hidden: 1`) y sin uso por ahora -- ese enfoque se retoma
+	despues, fuera de alcance de este cambio.
+	"""
 	doctype_name = "Articulo de Inventario"
 	doc = frappe.get_doc("DocType", doctype_name)
-	existing = {df.fieldname for df in doc.fields}
-	next_idx = max((cint(df.idx) for df in doc.fields), default=0) + 1
 
-	fields = [
-		{
-			"fieldname": "datos_mobiliario_section",
-			"label": "Datos de Mobiliario",
-			"fieldtype": "Section Break",
-		},
-		{"fieldname": "pabellon", "label": "Pabellon", "fieldtype": "Data"},
-		{"fieldname": "aula", "label": "Aula", "fieldtype": "Data"},
-	]
-
-	added = []
-	for field in fields:
-		if field["fieldname"] in existing:
-			continue
-		row = doc.append("fields", field)
-		row.idx = next_idx
-		next_idx += 1
-		added.append(field["fieldname"])
-
-	depends_on = {
-		"datos_tecnicos_section": 'eval:doc.modulo=="TI"',
-		"marca": 'eval:doc.modulo=="TI"',
-		"modelo": 'eval:doc.modulo=="TI"',
-		"datos_de_stock_section": 'eval:doc.modulo=="Gastronomia"',
-		"stock_actual": 'eval:doc.modulo=="Gastronomia"',
-		"stock_critico": 'eval:doc.modulo=="Gastronomia"',
-		"unidad_medida": 'eval:doc.modulo=="Gastronomia"',
-		"es_perecible": 'eval:doc.modulo=="Gastronomia"',
-		"fecha_vencimiento": 'eval:doc.modulo=="Gastronomia"',
-		"datos_catalogo_gastronomia_section": 'eval:doc.modulo=="Gastronomia"',
-		"grupo": 'eval:doc.modulo=="Gastronomia"',
-		"categoria": 'eval:doc.modulo=="Gastronomia"',
-		"presentacion": 'eval:doc.modulo=="Gastronomia"',
-		"proveedor_referencia": 'eval:doc.modulo=="Gastronomia"',
-		"medida": 'eval:doc.modulo=="Gastronomia"',
-		"porcentaje_desperdicio": 'eval:doc.modulo=="Gastronomia"',
-		"cantidad_minima": 'eval:doc.modulo=="Gastronomia"',
-		"precio_referencial": 'eval:doc.modulo=="Gastronomia"',
-		"datos_mobiliario_section": 'eval:doc.modulo=="General"',
-		"pabellon": 'eval:doc.modulo=="General"',
-		"aula": 'eval:doc.modulo=="General"',
-	}
-
-	mandatory_depends_on = {
-		"marca": 'eval:doc.modulo=="TI"',
-		"modelo": 'eval:doc.modulo=="TI"',
-		"unidad_medida": 'eval:doc.modulo=="Gastronomia"',
-		"pabellon": 'eval:doc.modulo=="General"',
-		"aula": 'eval:doc.modulo=="General"',
-		"motivo_cambio_estado": 'eval:doc.estado!="Activo"',
+	hidden_perecibles = {
+		"datos_de_stock_section", "stock_actual", "stock_critico", "unidad_medida",
+		"es_perecible", "fecha_vencimiento", "datos_catalogo_gastronomia_section",
+		"grupo", "categoria", "presentacion", "proveedor_referencia", "medida",
+		"porcentaje_desperdicio", "cantidad_minima", "precio_referencial",
 	}
 
 	for field in doc.fields:
-		if field.fieldname in depends_on:
-			field.depends_on = depends_on[field.fieldname]
-		if field.fieldname in mandatory_depends_on:
-			field.mandatory_depends_on = mandatory_depends_on[field.fieldname]
-		if field.fieldname == "pabellon":
-			field.fetch_from = "ubicacion.pabellon"
-			field.fetch_if_empty = 1
-		if field.fieldname == "aula":
-			field.fetch_from = "ubicacion.aula"
-			field.fetch_if_empty = 1
+		if field.fieldname in hidden_perecibles:
+			field.hidden = 1
+			field.depends_on = ""
+			field.mandatory_depends_on = ""
+		elif field.fieldname in ("marca", "modelo", "datos_tecnicos_section", "datos_mobiliario_section"):
+			field.depends_on = ""
+			field.mandatory_depends_on = ""
 
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 	frappe.clear_cache(doctype=doctype_name)
 
-	return {"added": added, "configured": sorted(depends_on)}
+	return {"hidden": sorted(hidden_perecibles)}
 
 
 def configure_article_status_options():
@@ -587,45 +545,6 @@ def configure_article_status_options():
 	return {"updated": updated, "options": ["Activo", "De baja", "En reparación"]}
 
 
-def fill_general_location_details_from_ubicacion():
-	"""Copy Pabellon/Aula from linked Ubicacion into General inventory items."""
-	items = frappe.get_all(
-		"Articulo de Inventario",
-		filters={"modulo": "General", "ubicacion": ["is", "set"]},
-		fields=["name", "ubicacion", "pabellon", "aula"],
-		limit_page_length=5000,
-	)
-
-	updated = []
-	for item in items:
-		ubicacion = frappe.db.get_value(
-			"Ubicacion",
-			item.ubicacion,
-			["pabellon", "aula"],
-			as_dict=True,
-		)
-		if not ubicacion:
-			continue
-
-		values = {}
-		if not item.pabellon and ubicacion.pabellon:
-			values["pabellon"] = ubicacion.pabellon
-		if not item.aula and ubicacion.aula:
-			values["aula"] = ubicacion.aula
-
-		if values:
-			frappe.db.set_value(
-				"Articulo de Inventario",
-				item.name,
-				values,
-				update_modified=False,
-			)
-			updated.append(item.name)
-
-	frappe.db.commit()
-	return {"updated": len(updated), "items": updated[:20]}
-
-
 def add_import_traceability_fields():
 	"""Add fields needed to preserve source Excel data during imports."""
 	doctype_name = "Articulo de Inventario"
@@ -660,17 +579,47 @@ def add_import_traceability_fields():
 		added.append(field["fieldname"])
 
 	for field in doc.fields:
-		if field.fieldname == "cantidad":
-			field.depends_on = 'eval:doc.modulo!="Gastronomia"'
-		if field.fieldname == "estado_conservacion":
-			field.depends_on = 'eval:doc.modulo!="Gastronomia"'
+		if field.fieldname in ("cantidad", "estado_conservacion"):
+			field.depends_on = ""
 
-	if added:
-		doc.save(ignore_permissions=True)
-		frappe.db.commit()
-		frappe.clear_cache(doctype=doctype_name)
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	frappe.clear_cache(doctype=doctype_name)
 
 	return {"added": added}
+
+
+def ensure_initial_modules():
+	"""Crea los modulos base (TI/Gastronomia) si no existen.
+
+	Modulo.modulo paso de Select fijo a Link: este seed debe correr ANTES de
+	que cualquier Ubicacion/Asignacion/Articulo de Inventario se cree con
+	estos valores, o el migrate los deja apuntando a un Modulo inexistente.
+	Modulos nuevos (ej. "Estilismo") los crea el SuperAdministrador desde la
+	UI -- estos son solo los que ya existian antes del cambio. Cada uno
+	reusa su rol "Admin X" ya existente (no se autogeneran roles nuevos para
+	estos, ya que create_initial_users() ya asigna esos roles reales a
+	usuarios de prueba).
+
+	"General" NO es un Modulo (requerimientosNuevos.md punto 5: el CEDHI lo
+	pidio como la VISTA AGREGADA de todos los modulos juntos, no un modulo
+	mas). El rol "Admin General" se fusiono con "Revisor" (renombrado, ver
+	GENERAL_ADMIN_ROLE en permissions.py): no administra un modulo propio,
+	tiene lectura total (_read_all_roles) y puede registrar Movimientos en
+	cualquier modulo (movement_has_permission), sin ser dueno de ninguno.
+	"""
+	modulos_base = {
+		"TI": "Admin TI",
+		"Gastronomia": "Admin Cocina",
+	}
+	for nombre, rol in modulos_base.items():
+		if not frappe.db.exists("Modulo", nombre):
+			frappe.get_doc({
+				"doctype": "Modulo",
+				"nombre_modulo": nombre,
+				"rol_admin": rol,
+			}).insert(ignore_permissions=True)
+	frappe.db.commit()
 
 
 def ensure_initial_reference_data():
@@ -871,8 +820,8 @@ def create_alerta_inventario_doctype():
 				{
 					"fieldname": "modulo",
 					"label": "Modulo",
-					"fieldtype": "Select",
-					"options": "TI\nGastronomia\nGeneral",
+					"fieldtype": "Link",
+					"options": "Modulo",
 					"fetch_from": "articulo.modulo",
 					"in_list_view": 1,
 					"in_standard_filter": 1,
@@ -956,12 +905,20 @@ def create_alerta_inventario_doctype():
 
 def create_basic_inventory_reports():
 	"""Create query reports useful for the MVP presentation."""
+	from inventario_cedhi.permissions import _admin_module_roles
+
 	module = INVENTORY_MODULE
+	# Reportes "genericos" (no atados a un modulo especifico): cualquier Admin
+	# de modulo (incluido uno creado dinamicamente despues, ej. Admin
+	# Estilismo) debe poder abrirlos -- Report.roles es una whitelist de quien
+	# puede ABRIR el reporte (no filtra datos, eso ya lo hace
+	# article_report_condition dinamicamente en permissions.py).
+	generic_roles = ["SuperAdministrador Inventario", "Revisor", "System Manager"] + sorted(_admin_module_roles())
 	reports = [
 		{
 			"report_name": "Resumen Inventario por Modulo",
 			"ref_doctype": "Articulo de Inventario",
-			"roles": ["SuperAdministrador Inventario", "Admin General", "Revisor", "System Manager"],
+			"roles": ["SuperAdministrador Inventario", "Revisor", "System Manager"],
 			"query": """
 select
   modulo as "Modulo:Data:160",
@@ -979,7 +936,6 @@ order by modulo
 			"roles": [
 				"SuperAdministrador Inventario",
 				"Admin Cocina",
-				"Admin General",
 				"Revisor",
 				"System Manager",
 			],
@@ -1006,7 +962,6 @@ order by grupo, nombre_articulo
 			"roles": [
 				"SuperAdministrador Inventario",
 				"Admin TI",
-				"Admin General",
 				"Revisor",
 				"System Manager",
 			],
@@ -1031,7 +986,6 @@ order by u.nombre_ubicacion
 			"roles": [
 				"SuperAdministrador Inventario",
 				"Admin TI",
-				"Admin General",
 				"Revisor",
 				"System Manager",
 			],
@@ -1054,7 +1008,7 @@ order by u.nombre_ubicacion, a.nombre_articulo
 			"roles": [
 				"SuperAdministrador Inventario",
 				"Admin Cocina",
-				"Admin General",
+				"Revisor",
 				"System Manager",
 			],
 			"query": """
@@ -1077,43 +1031,21 @@ order by grupo, nombre_articulo
 			"ref_doctype": "Articulo de Inventario",
 			"is_standard": "Yes",
 			"report_type": "Script Report",
-			"roles": [
-				"SuperAdministrador Inventario",
-				"Admin TI",
-				"Admin Cocina",
-				"Admin General",
-				"Revisor",
-				"System Manager",
-			],
+			"roles": generic_roles,
 		},
 		{
 			"report_name": "Bandeja de Alertas CEDHI",
 			"ref_doctype": "Alerta de Inventario",
 			"is_standard": "Yes",
 			"report_type": "Script Report",
-			"roles": [
-				"SuperAdministrador Inventario",
-				"Admin TI",
-				"Admin Cocina",
-				"Admin General",
-				"Revisor",
-				"Reportante",
-				"System Manager",
-			],
+			"roles": generic_roles + ["Reportante"],
 		},
 		{
 			"report_name": "Kardex de Movimientos",
 			"ref_doctype": "Movimiento de Inventario",
 			"is_standard": "Yes",
 			"report_type": "Script Report",
-			"roles": [
-				"SuperAdministrador Inventario",
-				"Admin TI",
-				"Admin Cocina",
-				"Admin General",
-				"Revisor",
-				"System Manager",
-			],
+			"roles": generic_roles,
 		},
 	]
 
@@ -1415,7 +1347,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario",
 		"Admin TI",
 		"Admin Cocina",
-		"Admin General",
 		"Revisor",
 		"Reportante",
 	]
@@ -1429,7 +1360,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _full_permission(import_=1),
 		"Admin TI": _manager_permission(import_=1),
 		"Admin Cocina": _manager_permission(import_=1),
-		"Admin General": _manager_permission(import_=1),
 		"Revisor": _read_only_permission(),
 		"Reportante": _read_only_permission(select=1),
 		"System Manager": _full_permission(import_=1),
@@ -1438,7 +1368,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _full_permission(import_=1),
 		"Admin TI": _manager_permission(),
 		"Admin Cocina": _manager_permission(),
-		"Admin General": _manager_permission(),
 		"Revisor": _read_only_permission(),
 		"Reportante": {
 			"read": 1,
@@ -1453,7 +1382,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _full_permission(import_=1),
 		"Admin TI": _read_only_permission(select=1),
 		"Admin Cocina": _read_only_permission(select=1),
-		"Admin General": _manager_permission(),
 		"Revisor": _read_only_permission(select=1),
 		"Reportante": _read_only_permission(select=1),
 		"System Manager": _full_permission(import_=1),
@@ -1462,7 +1390,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _manager_permission(),
 		"Admin TI": _read_only_permission(),
 		"Admin Cocina": _read_only_permission(),
-		"Admin General": _read_only_permission(),
 		"Revisor": _read_only_permission(),
 		"Reportante": _read_only_permission(),
 		"System Manager": _full_permission(),
@@ -1481,7 +1408,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _full_permission(submit=1, cancel=1),
 		"Admin TI": _manager_permission(submit=1, cancel=1),
 		"Admin Cocina": _manager_permission(submit=1, cancel=1),
-		"Admin General": _manager_permission(submit=1, cancel=1),
 		"Revisor": _read_only_permission(),
 		"Reportante": _read_only_permission(select=1),
 		"System Manager": _full_permission(submit=1, cancel=1),
@@ -1499,7 +1425,6 @@ def configure_inventory_role_permissions():
 		"SuperAdministrador Inventario": _manager_permission(),
 		"Admin TI": _manager_permission(),
 		"Admin Cocina": _manager_permission(),
-		"Admin General": _manager_permission(),
 		"System Manager": _full_permission(),
 	}
 	social_login_key_perms = {
@@ -1550,8 +1475,8 @@ def configure_reporter_user_fields():
 		{
 			"fieldname": "inventario_modulo_asignado",
 			"label": "Modulo asignado",
-			"fieldtype": "Select",
-			"options": "\nTI\nGastronomia\nGeneral",
+			"fieldtype": "Link",
+			"options": "Modulo",
 			"insert_after": "inventario_reportante_section",
 		},
 		{
@@ -1701,7 +1626,6 @@ def create_inventory_role_profiles():
 		"Perfil SuperAdministrador Inventario": ["SuperAdministrador Inventario"],
 		"Perfil Admin TI": ["Admin TI"],
 		"Perfil Admin Cocina": ["Admin Cocina"],
-		"Perfil Admin General": ["Admin General"],
 		"Perfil Revisor": ["Revisor"],
 		"Perfil Reportante": ["Reportante"],
 	}
@@ -1879,7 +1803,6 @@ def get_inventory_permission_summary():
 		"SuperAdministrador Inventario",
 		"Admin TI",
 		"Admin Cocina",
-		"Admin General",
 		"Revisor",
 		"System Manager",
 	}
@@ -2383,6 +2306,62 @@ window.open_quick_kardex_dialog = function(opts) {
 };
 """
 
+	reasignar_dialog_helper = """
+window.open_quick_reasignar_dialog = function(opts) {
+    opts = opts || {};
+    let d = new frappe.ui.Dialog({
+        title: __('Reasignar Articulo'),
+        fields: [
+            {
+                label: __('Modulo'),
+                fieldname: 'modulo',
+                fieldtype: 'Link',
+                options: 'Modulo',
+                reqd: 1,
+                default: opts.modulo || ''
+            },
+            {
+                label: __('Ubicacion'),
+                fieldname: 'ubicacion',
+                fieldtype: 'Link',
+                options: 'Ubicacion',
+                reqd: 1,
+                default: opts.ubicacion || ''
+            }
+        ],
+        primary_action_label: __('Reasignar'),
+        primary_action: function(values) {
+            d.get_primary_btn().prop('disabled', true);
+            frappe.call({
+                method: 'inventario_cedhi.inventory_logic.reasignar_articulo',
+                args: {
+                    articulo: opts.articulo,
+                    modulo: values.modulo,
+                    ubicacion: values.ubicacion
+                },
+                callback: function(r) {
+                    d.get_primary_btn().prop('disabled', false);
+                    if (!r.exc) {
+                        frappe.show_alert({
+                            message: __('Articulo reasignado correctamente.'),
+                            indicator: 'green'
+                        });
+                        d.hide();
+                        if (opts.callback) {
+                            opts.callback();
+                        }
+                    }
+                },
+                error: function() {
+                    d.get_primary_btn().prop('disabled', false);
+                }
+            });
+        }
+    });
+    d.show();
+};
+"""
+
 	list_view_doctypes = [
 		"Alerta de Inventario",
 		"Movimiento de Inventario",
@@ -2424,10 +2403,6 @@ frappe.ui.form.on('Articulo de Inventario', {
         frm.toggle_reqd('marca', frm.doc.modulo === 'TI');
         frm.toggle_reqd('modelo', frm.doc.modulo === 'TI');
 
-        // RF-GE-01: Pabellon/Aula visibility for General
-        let is_general = frm.doc.modulo === 'General' || frm.doc.modulo === 'TI';
-        frm.toggle_display(['pabellon', 'aula'], is_general);
-
         // RF-GA-03: Visual feedback for Critical Stock
         if (frm.doc.stock_actual <= frm.doc.stock_critico && frm.doc.stock_critico > 0) {
             frm.set_df_property('stock_actual', 'description',
@@ -2466,6 +2441,23 @@ frappe.ui.form.on('Articulo de Inventario', {
                 });
             });
         }
+
+        // requerimientosNuevos.md punto 6: boton de reasignar modulo/ubicacion
+        // sin abrir el formulario completo. Visible si puede escribir el doc
+        // actual (el permiso real, contra el modulo destino, lo valida
+        // reasignar_articulo en el servidor).
+        if (!frm.is_new() && frm.perm[0] && frm.perm[0].write) {
+            frm.add_custom_button(__('Reasignar'), function() {
+                window.open_quick_reasignar_dialog({
+                    articulo: frm.doc.name,
+                    modulo: frm.doc.modulo,
+                    ubicacion: frm.doc.ubicacion,
+                    callback: function() {
+                        frm.reload_doc();
+                    }
+                });
+            });
+        }
     },
     modulo: function(frm) {
         frm.trigger('refresh');
@@ -2480,7 +2472,7 @@ frappe.ui.form.on('Articulo de Inventario', {
         }
     }
 });
-""" + mobile_navigation_helper + kardex_dialog_helper,
+""" + mobile_navigation_helper + kardex_dialog_helper + reasignar_dialog_helper,
 		},
 		{
 			"dt": "Articulo de Inventario",
@@ -2524,11 +2516,32 @@ frappe.listview_settings['Articulo de Inventario'].onload = function(listview) {
             });
         });
     }
+
+    // requerimientosNuevos.md punto 6: reasignar un articulo seleccionado
+    // sin abrir su formulario. El permiso real lo valida reasignar_articulo
+    // en el servidor (este boton solo requiere write generico en el doctype).
+    if (frappe.model.can_write('Articulo de Inventario')) {
+        listview.page.add_inner_button(__('Reasignar'), function() {
+            let selected = listview.get_checked_items();
+            if (!selected || selected.length !== 1) {
+                frappe.msgprint(__('Seleccione exactamente un articulo para reasignar.'));
+                return;
+            }
+            window.open_quick_reasignar_dialog({
+                articulo: selected[0].name,
+                modulo: selected[0].modulo,
+                ubicacion: selected[0].ubicacion,
+                callback: function() {
+                    listview.refresh();
+                }
+            });
+        });
+    }
 };
 frappe.listview_settings['Articulo de Inventario'].refresh = function(listview) {
     window.cedhi_mobile_navigation && window.cedhi_mobile_navigation.ensure && window.cedhi_mobile_navigation.ensure();
 };
-""" + mobile_navigation_helper + kardex_dialog_helper,
+""" + mobile_navigation_helper + kardex_dialog_helper + reasignar_dialog_helper,
 		}
 	]
 
@@ -2778,7 +2791,7 @@ def create_initial_users():
 		{
 			"email": "manuel@cedhi.local",
 			"first_name": "Sr. Manuel",
-			"role_profile_name": "Perfil Admin General",
+			"role_profile_name": "Perfil Revisor",
 			"additional_roles": ["Desk User"],
 		},
 	]
@@ -2905,7 +2918,6 @@ def create_inventory_workspace():
 		{"role": "SuperAdministrador Inventario"},
 		{"role": "Admin TI"},
 		{"role": "Admin Cocina"},
-		{"role": "Admin General"},
 		{"role": "Revisor"},
 		{"role": "Reportante"},
 	]
@@ -2984,7 +2996,7 @@ def create_child_workspaces():
 			"name": "Operaciones",
 			"icon": "list",
 			"banner_text": '<div class="hero-banner operations-banner"><h1>Operaciones</h1><p>Control de transacciones, incidencias y catálogo maestro de artículos.</p></div>',
-			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Admin General", "Revisor", "Reportante"],
+			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Revisor", "Reportante"],
 			"links": [
 				{"label": "Documentos de Inventario", "type": "Card Break"},
 				{"label": "Catálogo Maestro", "link_to": "Articulo de Inventario", "link_type": "DocType", "type": "Link"},
@@ -2996,7 +3008,7 @@ def create_child_workspaces():
 			"name": "Reportes",
 			"icon": "trending-up",
 			"banner_text": '<div class="hero-banner reports-banner"><h1>Reportes</h1><p>Visualización de datos analíticos, stock crítico y reportes históricos.</p></div>',
-			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Admin General", "Revisor"],
+			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Revisor"],
 			"links": [
 				{"label": "Reportes de Gestión", "type": "Card Break"},
 				{"label": "Reporte Maestro (Excel)", "link_to": "Reporte Maestro de Inventario", "link_type": "Report", "type": "Link", "is_query_report": 1, "dependencies": "Articulo de Inventario"},
@@ -3010,9 +3022,10 @@ def create_child_workspaces():
 			"name": "Configuración",
 			"icon": "settings",
 			"banner_text": '<div class="hero-banner configuration-banner"><h1>Configuración</h1><p>Gestión de espacios físicos, usuarios e importación de catálogos.</p></div>',
-			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina", "Admin General"],
+			"roles": ["System Manager", "SuperAdministrador Inventario", "Admin TI", "Admin Cocina"],
 			"links": [
 				{"label": "Parámetros del Sistema", "type": "Card Break"},
+				{"label": "Gestión de Módulos", "link_to": "Modulo", "link_type": "DocType", "type": "Link"},
 				{"label": "Espacios Físicos", "link_to": "Ubicacion", "link_type": "DocType", "type": "Link"},
 				{"label": "Importación Masiva", "link_to": "Data Import", "link_type": "DocType", "type": "Link"},
 				{"label": "Gestión de Usuarios", "link_to": "User", "link_type": "DocType", "type": "Link"},
@@ -3023,9 +3036,7 @@ def create_child_workspaces():
 			# pueden ejecutar la carga de catalogo (ver data_import.py).
 			"shortcuts": [
 				{"type": "URL", "url": "/cargar_catalogo", "label": "CARGAR CATÁLOGO INICIAL", "color": "Blue"},
-				{"type": "URL", "url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=Gastronomia", "label": "PLANTILLA GASTRONOMÍA", "color": "Orange"},
-				{"type": "URL", "url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=TI", "label": "PLANTILLA TI", "color": "Orange"},
-				{"type": "URL", "url": "/api/method/inventario_cedhi.data_import.descargar_plantilla?modulo=General", "label": "PLANTILLA GENERAL", "color": "Orange"},
+				{"type": "URL", "url": "/cargar_ubicaciones", "label": "CARGAR UBICACIONES REALES", "color": "Blue"},
 			],
 		}
 	]
@@ -3340,11 +3351,11 @@ def backfill_default_workspace():
 	manda a la "ultima vista visitada" (default real de User.default_workspace
 	cuando esta vacio) en vez de su panel de inventario.
 	"""
-	from inventario_cedhi.inventory_logic import CEDHI_ROLES
+	from inventario_cedhi.inventory_logic import _cedhi_roles
 
 	users = frappe.get_all(
 		"Has Role",
-		filters={"role": ["in", list(CEDHI_ROLES)], "parenttype": "User"},
+		filters={"role": ["in", list(_cedhi_roles())], "parenttype": "User"},
 		pluck="parent",
 		distinct=True,
 	)

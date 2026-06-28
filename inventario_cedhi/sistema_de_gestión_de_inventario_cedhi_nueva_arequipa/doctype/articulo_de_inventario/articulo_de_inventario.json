@@ -39,8 +39,6 @@
   "cantidad_minima",
   "precio_referencial",
   "datos_mobiliario_section",
-  "pabellon",
-  "aula",
   "cantidad",
   "estado_conservacion",
   "trazabilidad_importacion_section",
@@ -78,12 +76,12 @@
   },
   {
    "fieldname": "modulo",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Modulo",
-   "options": "TI\nGastronomia\nGeneral",
+   "options": "Modulo",
    "reqd": 1
   },
   {
@@ -127,24 +125,19 @@
    "label": "Codigo interno"
   },
   {
-   "depends_on": "eval:doc.modulo==\"TI\"",
    "fieldname": "datos_tecnicos_section",
    "fieldtype": "Section Break",
    "label": "Datos Tecnicos"
   },
   {
-   "depends_on": "eval:doc.modulo==\"TI\"",
    "fieldname": "marca",
    "fieldtype": "Data",
-   "label": "Marca",
-   "mandatory_depends_on": "eval:doc.modulo==\"TI\""
+   "label": "Marca"
   },
   {
-   "depends_on": "eval:doc.modulo==\"TI\"",
    "fieldname": "modelo",
    "fieldtype": "Data",
-   "label": "Modelo",
-   "mandatory_depends_on": "eval:doc.modulo==\"TI\""
+   "label": "Modelo"
   },
   {
    "fieldname": "fotografia",
@@ -152,50 +145,49 @@
    "label": "Fotografia"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "datos_de_stock_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Datos de Stock"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "stock_actual",
    "fieldtype": "Float",
+   "hidden": 1,
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Stock actual"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "stock_critico",
    "fieldtype": "Float",
+   "hidden": 1,
    "label": "Stock critico"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "unidad_medida",
    "fieldtype": "Data",
+   "hidden": 1,
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Unidad de medida",
-   "mandatory_depends_on": "eval:doc.modulo==\"Gastronomia\""
+   "label": "Unidad de medida"
   },
   {
    "default": "No",
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "es_perecible",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_filter": 1,
    "in_standard_filter": 1,
    "label": "Es perecible",
    "options": "Si\nNo"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "fecha_vencimiento",
    "fieldtype": "Date",
+   "hidden": 1,
    "label": "Fecha de vencimiento"
   },
   {
@@ -212,100 +204,79 @@
   {
    "fieldname": "fecha_de_adquisici\u00f3n",
    "fieldtype": "Date",
-   "label": "Fecha de adquisicion",
-   "reqd": 1
+   "hidden": 1,
+   "label": "Fecha de adquisicion (legacy, no usar)"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "datos_catalogo_gastronomia_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Datos de Catalogo Gastronomia"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "grupo",
    "fieldtype": "Data",
+   "hidden": 1,
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Grupo"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "categoria",
    "fieldtype": "Data",
+   "hidden": 1,
    "in_filter": 1,
    "in_standard_filter": 1,
    "label": "Categoria"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "presentacion",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Presentacion"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "proveedor_referencia",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Proveedor de referencia"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "medida",
    "fieldtype": "Float",
+   "hidden": 1,
    "label": "Medida"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "porcentaje_desperdicio",
    "fieldtype": "Percent",
+   "hidden": 1,
    "label": "Porcentaje desperdicio"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "cantidad_minima",
    "fieldtype": "Float",
+   "hidden": 1,
    "label": "Cantidad minima"
   },
   {
-   "depends_on": "eval:doc.modulo==\"Gastronomia\"",
    "fieldname": "precio_referencial",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Precio referencial"
   },
   {
-   "depends_on": "eval:doc.modulo==\"General\"",
    "fieldname": "datos_mobiliario_section",
    "fieldtype": "Section Break",
    "label": "Datos de Mobiliario"
   },
   {
-   "depends_on": "eval:doc.modulo==\"General\"",
-   "fetch_from": "ubicacion.pabellon",
-   "fetch_if_empty": 1,
-   "fieldname": "pabellon",
-   "fieldtype": "Data",
-   "label": "Pabellon",
-   "mandatory_depends_on": "eval:doc.modulo==\"General\""
-  },
-  {
-   "depends_on": "eval:doc.modulo==\"General\"",
-   "fetch_from": "ubicacion.aula",
-   "fetch_if_empty": 1,
-   "fieldname": "aula",
-   "fieldtype": "Data",
-   "label": "Aula",
-   "mandatory_depends_on": "eval:doc.modulo==\"General\""
-  },
-  {
-   "depends_on": "eval:doc.modulo==\"TI\" || doc.modulo==\"General\"",
    "fieldname": "cantidad",
    "fieldtype": "Float",
    "label": "Cantidad"
   },
   {
-   "depends_on": "eval:doc.modulo!=\"Gastronomia\"",
    "fieldname": "estado_conservacion",
    "fieldtype": "Data",
    "label": "Estado de conservacion"
@@ -335,7 +306,7 @@
  "image_field": "fotografia",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-21 19:41:42.367443",
+ "modified": "2026-06-28 18:51:43.345043",
  "modified_by": "Administrator",
  "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
  "name": "Articulo de Inventario",
@@ -396,23 +367,12 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
    "export": 1,
-   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Admin General",
-   "select": 1,
-   "write": 1
-  },
-  {
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Revisor"
+   "role": "Revisor",
+   "select": 1
   },
   {
    "print": 1,

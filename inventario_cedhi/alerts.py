@@ -1,14 +1,6 @@
 import frappe
 
-
-ADMIN_ALERT_ROLES = {
-	"Administrator",
-	"System Manager",
-	"SuperAdministrador Inventario",
-	"Admin TI",
-	"Admin Cocina",
-	"Admin General",
-}
+from inventario_cedhi.permissions import FULL_ACCESS_ROLES, _admin_module_roles
 
 
 def set_alert_defaults(doc, method=None):
@@ -43,7 +35,8 @@ def _is_reporter_only():
 		return False
 
 	roles = set(frappe.get_roles(frappe.session.user))
-	return "Reportante" in roles and not roles & ADMIN_ALERT_ROLES
+	admin_roles = FULL_ACCESS_ROLES | _admin_module_roles()
+	return "Reportante" in roles and not roles & admin_roles
 
 
 def _validate_reporter_location(article):

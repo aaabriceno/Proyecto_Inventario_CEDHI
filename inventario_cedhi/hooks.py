@@ -70,7 +70,6 @@ role_home_page = {
 	"SuperAdministrador Inventario": "app/inventario-cedhi",
 	"Admin TI": "app/inventario-cedhi",
 	"Admin Cocina": "app/inventario-cedhi",
-	"Admin General": "app/inventario-cedhi",
 	"Revisor": "app/inventario-cedhi",
 	"Reportante": "app/inventario-cedhi",
 }
@@ -142,6 +141,7 @@ has_permission = {
 	"Articulo de Inventario": "inventario_cedhi.permissions.article_has_permission",
 	"Alerta de Inventario": "inventario_cedhi.permissions.alert_has_permission",
 	"Movimiento de Inventario": "inventario_cedhi.permissions.movement_has_permission",
+	"Ubicacion": "inventario_cedhi.permissions.ubicacion_has_permission",
 	"User": "inventario_cedhi.permissions.user_has_permission",
 }
 
@@ -166,8 +166,10 @@ has_permission = {
 # }
 doc_events = {
 	"Articulo de Inventario": {
-		"before_insert": "inventario_cedhi.inventory_logic.set_internal_code",
-		"validate": "inventario_cedhi.inventory_logic.require_estado_change_reason",
+		"validate": [
+			"inventario_cedhi.inventory_logic.set_internal_code",
+			"inventario_cedhi.inventory_logic.require_estado_change_reason",
+		],
 	},
 	"Alerta de Inventario": {
 		"before_insert": "inventario_cedhi.alerts.set_alert_defaults",
@@ -313,7 +315,6 @@ fixtures = [
 					"SuperAdministrador Inventario",
 					"Admin TI",
 					"Admin Cocina",
-					"Admin General",
 					"Revisor",
 					"Reportante",
 				],

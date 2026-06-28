@@ -1,0 +1,47 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-05-19 12:39:08.846839",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-06-28 17:32:35.459257",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Kardex de Movimientos",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "\nSELECT \n    name as \"ID Movimiento:Link/Movimiento de Inventario:150\",\n    fecha_movimiento as \"Fecha:Date:120\",\n    tipo_movimiento as \"Tipo:Data:120\",\n    articulo as \"Art\u00edculo:Link/Articulo de Inventario:200\",\n    cantidad as \"Cantidad:Int:100\",\n    responsable as \"Responsable:Data:180\",\n    observaciones as \"Observaciones:Data:250\"\nFROM \n    `tabMovimiento de Inventario`\nWHERE \n    docstatus < 2\nORDER BY \n    fecha_movimiento DESC\n",
+ "ref_doctype": "Movimiento de Inventario",
+ "report_name": "Kardex de Movimientos",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "SuperAdministrador Inventario"
+  },
+  {
+   "role": "Revisor"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Admin Cocina"
+  },
+  {
+   "role": "Admin Estilismo"
+  },
+  {
+   "role": "Admin Mobiliaria"
+  },
+  {
+   "role": "Admin TI"
+  }
+ ],
+ "timeout": 0
+}

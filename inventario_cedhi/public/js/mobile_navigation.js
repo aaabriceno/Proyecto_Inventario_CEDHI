@@ -162,7 +162,6 @@ function cedhi_apply_role_theme() {
     var roleColors = {
         'Admin Cocina':                   '#2DAE6A',  // verde
         'Admin TI':                        '#00AECC',  // cian
-        'Admin General':                   '#F5C300',  // amarillo
         'Revisor':                         '#1A2F6E',  // navy
         'Reportante':                      '#5A6A8E',  // gris
         'SuperAdministrador Inventario':   '#D9202A',  // rojo
@@ -194,41 +193,19 @@ if (window.frappe && typeof frappe.after_ajax === "function") {
 // ciertos roles (el server-side ya los bloquea, ver data_import.py), pero
 // Frappe no permite ocultar un shortcut individual por rol dentro de un mismo
 // workspace (el campo "roles" del Workspace oculta el workspace ENTERO, no
-// shortcuts sueltos). Los ocultamos via JS para que cada rol solo vea botones
-// que realmente puede usar:
-// - CARGAR CATALOGO INICIAL: solo SuperAdmin/System Manager.
-// - PLANTILLA <modulo>: cada Admin de modulo solo ve la plantilla de SU
-//   modulo (Admin TI -> PLANTILLA TI, etc.); SuperAdmin/System Manager ven
-//   las 3.
+// shortcuts sueltos). Los botones de carga masiva (CARGAR CATALOGO INICIAL/
+// CARGAR UBICACIONES REALES) solo los puede ejecutar SuperAdmin/System
+// Manager, asi que los ocultamos via JS para el resto.
 function cedhi_hide_restricted_shortcuts() {
     var roles = (window.frappe && frappe.user_roles) || [];
     var fullAccess = ['SuperAdministrador Inventario', 'System Manager', 'Administrator'];
     var hasFullAccess = roles.some(function (r) { return fullAccess.includes(r); });
 
-    var moduleTemplateByRole = {
-        'Admin TI': 'PLANTILLA TI',
-        'Admin Cocina': 'PLANTILLA GASTRONOM',
-        'Admin General': 'PLANTILLA GENERAL',
-    };
-    var ownTemplateLabel = Object.keys(moduleTemplateByRole)
-        .map(function (r) { return roles.includes(r) ? moduleTemplateByRole[r] : null; })
-        .find(Boolean);
-
     document.querySelectorAll('.shortcut-widget-box').forEach(function (box) {
         var label = box.textContent || '';
         var widget = box.closest('.widget') || box;
-        var hide = false;
 
-        if (!hasFullAccess && label.indexOf('CARGAR CAT') !== -1) {
-            hide = true;
-        }
-        if (!hasFullAccess && label.indexOf('PLANTILLA') !== -1) {
-            // Si el rol tiene una plantilla propia, oculta las demas; si no
-            // tiene modulo asignado (Revisor/Reportante), oculta todas.
-            hide = !ownTemplateLabel || label.indexOf(ownTemplateLabel) === -1;
-        }
-
-        if (hide) {
+        if (!hasFullAccess && label.indexOf('CARGAR') !== -1) {
             widget.style.setProperty('display', 'none', 'important');
         }
     });

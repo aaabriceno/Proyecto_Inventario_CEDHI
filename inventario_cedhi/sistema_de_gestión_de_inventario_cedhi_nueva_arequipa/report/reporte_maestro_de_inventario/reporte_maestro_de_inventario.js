@@ -4,8 +4,8 @@ frappe.query_reports["Reporte Maestro de Inventario"] = {
 		{
 			"fieldname": "modulo",
 			"label": __("Módulo"),
-			"fieldtype": "Select",
-			"options": "\nTI\nGastronomia\nGeneral",
+			"fieldtype": "Link",
+			"options": "Modulo",
 		},
 		{
 			"fieldname": "ubicacion",

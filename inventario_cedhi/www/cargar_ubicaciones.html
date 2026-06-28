@@ -1,0 +1,43 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Cargar ubicaciones reales - CEDHI{% endblock %}
+
+{% block page_content %}
+<div class="container" style="max-width: 720px; margin: 40px auto;">
+	<h2>Carga de ubicaciones reales</h2>
+	<p class="text-muted">
+		Crea las Ubicaciones del CEDHI a partir de los archivos de inventario
+		en <code>datos_iniciales/INVENTARIO_2026/</code>. La carga es
+		<strong>idempotente</strong>: si una ubicacion ya existe no se
+		duplica. El modulo de cada ubicacion queda vacio (a definir despues).
+	</p>
+
+	{% if not puede_importar %}
+		<div class="alert alert-warning">
+			No tiene permiso para ejecutar esta carga. Solo el Superadministrador
+			puede hacerlo.
+		</div>
+	{% else %}
+		<form method="POST" action="/cargar_ubicaciones">
+			<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+			<button type="submit" class="btn btn-primary">
+				Cargar ubicaciones
+			</button>
+		</form>
+
+		{% if resultado %}
+			<div class="alert alert-success" style="margin-top: 24px;">
+				<strong>Carga completada.</strong>
+				{{ resultado.creadas|length }} ubicaciones creadas,
+				{{ resultado.saltadas|length }} ya existian.
+			</div>
+			{% if resultado.creadas %}
+				<p><strong>Creadas:</strong> {{ resultado.creadas|join(", ") }}</p>
+			{% endif %}
+			{% if resultado.saltadas %}
+				<p class="text-muted"><strong>Ya existian:</strong> {{ resultado.saltadas|join(", ") }}</p>
+			{% endif %}
+		{% endif %}
+	{% endif %}
+</div>
+{% endblock %}

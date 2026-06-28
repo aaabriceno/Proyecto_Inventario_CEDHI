@@ -33,45 +33,61 @@ def require_estado_change_reason(doc, method=None):
         )
 
 
-def set_internal_code(doc, method=None):
-    """RF-GE-02: Automatically assign a unique internal code for all inventory modules if not provided."""
-    if not doc.codigo_interno and doc.modulo:
-        # Map module names to internal prefixes
-        tag_map = {
-            "TI": "TI",
-            "Gastronomia": "GAS",
-            "General": "GEN"
-        }
-        tag = tag_map.get(doc.modulo)
-        if not tag:
-            return
+def _slug_for_codigo(value):
+    """Normaliza un nombre (modulo/ubicacion) a un slug corto para el codigo_interno."""
+    import re
+    slug = re.sub(r"[^A-Za-z0-9]+", "", (value or "").upper())
+    return slug[:12] or "SN"
 
-        # Generate a unique code based on year and next sequential number
-        year = frappe.utils.nowdate()[:4]
-        prefix = f"INV-{tag}-{year}-"
-        
-        # Get all existing codes matching this prefix to determine the max suffix
-        existing_codes = frappe.get_all(
-            "Articulo de Inventario",
-            filters={"codigo_interno": ["like", f"{prefix}%"]},
-            pluck="codigo_interno"
+
+def set_internal_code(doc, method=None):
+    """RF-GE-02: Genera/actualiza codigo_interno como etiqueta legible de la
+    ubicacion fisica actual del articulo (modulo + ubicacion + secuencial).
+
+    A diferencia del identificador permanente del articulo (campo `ID`, fijo
+    de por vida, ver create_articulo_inventario_doctype), codigo_interno SI
+    se recalcula cuando el articulo cambia de modulo o de ubicacion -- es
+    una etiqueta descriptiva del estado actual, no un identificador estable.
+    Por eso corre en validate (no solo before_insert): debe reaccionar a
+    cualquier update que cambie modulo/ubicacion, no solo a la creacion.
+    """
+    if not doc.modulo or not doc.ubicacion:
+        return
+
+    modulo_anterior = ubicacion_anterior = None
+    if not doc.is_new():
+        prev = frappe.db.get_value(
+            "Articulo de Inventario", doc.name, ["modulo", "ubicacion"], as_dict=True
         )
-        
-        max_num = 0
-        for code in existing_codes:
-            if code and code.startswith(prefix):
-                suffix = code.replace(prefix, "")
-                if suffix.isdigit():
-                    max_num = max(max_num, int(suffix))
-                    
-        # Increment to find the next strictly unused code
-        next_num = max_num + 1
-        while True:
-            candidate = f"{prefix}{str(next_num).zfill(4)}"
-            if not frappe.db.exists("Articulo de Inventario", {"codigo_interno": candidate}):
-                doc.codigo_interno = candidate
-                break
-            next_num += 1
+        if prev:
+            modulo_anterior, ubicacion_anterior = prev.modulo, prev.ubicacion
+
+    sin_cambio_de_lugar = doc.modulo == modulo_anterior and doc.ubicacion == ubicacion_anterior
+    if doc.codigo_interno and sin_cambio_de_lugar:
+        return
+
+    prefix = f"INV-{_slug_for_codigo(doc.modulo)}-{_slug_for_codigo(doc.ubicacion)}-"
+
+    existing_codes = frappe.get_all(
+        "Articulo de Inventario",
+        filters={"codigo_interno": ["like", f"{prefix}%"]},
+        pluck="codigo_interno",
+    )
+
+    max_num = 0
+    for code in existing_codes:
+        if code and code.startswith(prefix):
+            suffix = code[len(prefix):]
+            if suffix.isdigit():
+                max_num = max(max_num, int(suffix))
+
+    next_num = max_num + 1
+    while True:
+        candidate = f"{prefix}{str(next_num).zfill(4)}"
+        if not frappe.db.exists("Articulo de Inventario", {"codigo_interno": candidate}):
+            doc.codigo_interno = candidate
+            break
+        next_num += 1
 
 def validate_stock_on_movement(doc, method=None):
     """Validación Estricta: Previene salidas de stock mayores al stock actual."""
@@ -172,6 +188,33 @@ def create_quick_movement(articulo, tipo_movimiento, cantidad, motivo):
     return doc.name
 
 
+@frappe.whitelist()
+def reasignar_articulo(articulo, modulo, ubicacion):
+    """Cambia el modulo y/o ubicacion de un Articulo de Inventario sin abrir
+    el formulario completo (requerimientosNuevos.md punto 6: "boton de
+    reasignar... dentro de cada modulo").
+
+    Solo valida permiso de escritura sobre el modulo ACTUAL del articulo
+    (el de origen): si el usuario ya podia editar ese articulo, puede
+    reasignarlo a cualquier modulo destino, sin necesitar permiso en ese
+    destino -- lo que importa es si tenia derecho a tocar el articulo
+    antes de moverlo, no a donde lo manda (decision confirmada con el
+    usuario: a diferencia de Ubicacion, que es independiente de modulo,
+    el modulo de un Articulo SI es la unidad de responsabilidad real).
+    """
+    doc = frappe.get_doc("Articulo de Inventario", articulo)
+    if not doc.has_permission("write"):
+        frappe.throw(
+            _("No tiene permisos para reasignar este articulo."),
+            frappe.PermissionError,
+        )
+
+    doc.modulo = modulo
+    doc.ubicacion = ubicacion
+    doc.save(ignore_permissions=True)
+    return doc.name
+
+
 def force_spanish_language(*args, **kwargs):
     """Enforce Spanish ('es') language on all requests and background jobs."""
     import frappe
@@ -184,14 +227,15 @@ def enforce_user_language(doc, method=None):
     doc.language = "es"
 
 
-CEDHI_ROLES = {
-    "SuperAdministrador Inventario",
-    "Admin TI",
-    "Admin Cocina",
-    "Admin General",
-    "Revisor",
-    "Reportante",
-}
+def _cedhi_roles():
+    """Todos los roles del CEDHI: Admin de cada modulo existente (dinamico,
+    ver permissions.py:_admin_module_roles) + los roles fijos restantes."""
+    from inventario_cedhi.permissions import (
+        INVENTORY_SUPERADMIN_ROLE,
+        REPORTER_ROLE,
+        _admin_module_roles,
+    )
+    return _admin_module_roles() | {INVENTORY_SUPERADMIN_ROLE, "Revisor", REPORTER_ROLE}
 
 
 def enforce_default_workspace(doc, method=None):
@@ -206,7 +250,7 @@ def enforce_default_workspace(doc, method=None):
     if doc.user_type != "System User":
         return
     roles = {r.role for r in doc.roles}
-    if roles & CEDHI_ROLES and not doc.default_workspace:
+    if roles & _cedhi_roles() and not doc.default_workspace:
         doc.default_workspace = "Inventario CEDHI"
 
 

@@ -17,10 +17,12 @@ o lo salta.
 
 import csv
 import os
+import re
 
 import frappe
 
 CSV_DIR = os.path.join("datos_iniciales", "csv")
+INVENTARIO_2026_DIR = os.path.join("datos_iniciales", "INVENTARIO_2026")
 
 # Mapa de los ids internos usados en los CSV exportados -> nombre canonico de la
 # Ubicacion/Asignacion. Se resuelve a nombre para luego buscar/crear por nombre.
@@ -329,7 +331,7 @@ PLANTILLA_COLUMNS = {
 	],
 	"General": [
 		"nombre_articulo", "descripcion", "codigo_interno", "cantidad",
-		"pabellon", "aula", "estado_conservacion", "ubicacion", "estado",
+		"estado_conservacion", "ubicacion", "estado",
 	],
 }
 
@@ -347,7 +349,7 @@ PLANTILLA_EJEMPLO = {
 	},
 	"General": {
 		"nombre_articulo": "SILLA APILABLE", "codigo_interno": "GEN-0001",
-		"cantidad": "1", "pabellon": "A", "aula": "201",
+		"cantidad": "1", "estado_conservacion": "B",
 		"ubicacion": "Aula General 201", "estado": "Activo",
 	},
 }
@@ -397,3 +399,69 @@ def descargar_plantilla(modulo="Gastronomia"):
 	frappe.response["filename"] = f"plantilla_{modulo.lower()}.csv"
 	frappe.response["filecontent"] = contenido
 	frappe.response["content_type"] = "text/csv"
+
+
+# --- Importador de ubicaciones reales del CEDHI -----------------------------
+
+def _nombre_ubicacion_desde_archivo(filename):
+	"""Convierte el nombre de un Excel de inventario en el nombre de la Ubicacion.
+
+	Los archivos de datos_iniciales/INVENTARIO_2026/ se llaman, por ejemplo,
+	"10. AULA_01.xlsx" o "1. DIRECCION.xlsx": se quita el numero/punto inicial
+	y los guiones bajos se normalizan a espacio, ya que el nombre del archivo
+	(no el campo AREA del Excel, que muchos traen vacio) es la fuente real del
+	nombre de la ubicacion segun el CEDHI.
+	"""
+	base = os.path.splitext(filename)[0]
+	base = re.sub(r"^\d+\.?\s*", "", base)
+	base = base.replace("_", " ")
+	base = re.sub(r"\s+", " ", base).strip()
+	return base.title()
+
+
+@frappe.whitelist()
+def importar_ubicaciones_reales_endpoint():
+	"""Endpoint llamable desde la UI (boton del workspace Configuracion).
+
+	Solo SuperAdministrador/System Manager pueden ejecutarlo, igual que la
+	carga del catalogo inicial. Es rapido (30 registros): a diferencia de
+	import_catalogo_inicial no necesita encolarse en background.
+	"""
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para importar las ubicaciones reales.")
+	return importar_ubicaciones_reales()
+
+
+def importar_ubicaciones_reales():
+	"""Crea (idempotente) las Ubicaciones reales del CEDHI a partir de los
+	nombres de archivo en datos_iniciales/INVENTARIO_2026/.
+
+	El modulo queda vacio: a la fecha de este importador el CEDHI aun no ha
+	definido a que modulo pertenece cada ubicacion (ej. Direccion no
+	pertenece a ningun modulo), asi que no se fuerza un valor.
+	"""
+	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+	folder = os.path.join(app_path, INVENTARIO_2026_DIR)
+	if not os.path.isdir(folder):
+		frappe.throw(f"No se encontro la carpeta {folder}")
+
+	creadas = []
+	saltadas = []
+	for filename in sorted(os.listdir(folder)):
+		if not filename.lower().endswith(".xlsx") or filename.startswith("Copia"):
+			continue
+		nombre = _nombre_ubicacion_desde_archivo(filename)
+		if frappe.db.exists("Ubicacion", {"nombre_ubicacion": nombre}):
+			saltadas.append(nombre)
+			continue
+		doc = frappe.get_doc({
+			"doctype": "Ubicacion",
+			"nombre_ubicacion": nombre,
+			"activo": "Si",
+		})
+		doc.insert(ignore_permissions=True)
+		creadas.append(nombre)
+
+	frappe.db.commit()
+	return {"creadas": creadas, "saltadas": saltadas}

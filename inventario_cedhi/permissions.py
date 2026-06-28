@@ -5,14 +5,49 @@ SYSTEM_ACCESS_ROLES = {"Administrator", "System Manager"}
 INVENTORY_SUPERADMIN_ROLE = "SuperAdministrador Inventario"
 REPORTER_ROLE = "Reportante"
 FULL_ACCESS_ROLES = SYSTEM_ACCESS_ROLES | {INVENTORY_SUPERADMIN_ROLE}
-MODULE_WRITE_ACCESS = {
-	"Admin TI": {"TI"},
-	"Admin Cocina": {"Gastronomia"},
-	"Admin General": {"General"},
-}
-READ_ALL_ROLES = FULL_ACCESS_ROLES | {"Admin General", "Revisor"}
-LIMITED_USER_ROLES = {"Admin TI", "Admin Cocina", "Admin General", "Revisor", REPORTER_ROLE}
-INVENTORY_USER_ROLES = LIMITED_USER_ROLES | {INVENTORY_SUPERADMIN_ROLE}
+# "Revisor" (antes "Admin General", fusionados: ver requerimientosNuevos.md
+# punto 5) mantiene lectura de todo (ver _read_all_roles abajo) + puede
+# registrar Movimientos (Kardex) en cualquier modulo (ver movement_has_permission).
+GENERAL_ADMIN_ROLE = "Revisor"
+
+
+def _module_write_access():
+	"""Mapa {rol_admin: {nombre_modulo}} leido de la tabla Modulo.
+
+	Reemplaza el dict fijo que existia antes de que los modulos fueran
+	creables dinamicamente (SuperAdministrador crea un Modulo nuevo -> se
+	genera su Role "Admin {nombre}" automaticamente, ver modulo.py
+	before_insert): este lookup hace que ese rol tenga permisos de escritura
+	reales sobre su modulo sin tocar este archivo de nuevo.
+	"""
+	modulos = frappe.get_all(
+		"Modulo",
+		filters={"rol_admin": ["is", "set"]},
+		fields=["nombre_modulo", "rol_admin"],
+	)
+	access = {}
+	for m in modulos:
+		access.setdefault(m.rol_admin, set()).add(m.nombre_modulo)
+	return access
+
+
+def _admin_module_roles():
+	"""Todos los roles "Admin {modulo}" existentes (uno por cada Modulo)."""
+	return set(_module_write_access())
+
+
+def _limited_user_roles():
+	"""Roles con acceso restringido al sistema (no total): un Admin por cada
+	modulo existente + Revisor + Reportante."""
+	return _admin_module_roles() | {"Revisor", REPORTER_ROLE}
+
+
+def _inventory_user_roles():
+	return _limited_user_roles() | {INVENTORY_SUPERADMIN_ROLE}
+
+
+def _read_all_roles():
+	return FULL_ACCESS_ROLES | {GENERAL_ADMIN_ROLE}
 
 
 def _user_roles(user=None):
@@ -24,11 +59,11 @@ def _user_roles(user=None):
 
 def _allowed_modules_for_read(user=None):
 	roles = _user_roles(user)
-	if roles & READ_ALL_ROLES:
+	if roles & _read_all_roles():
 		return None
 
 	modules = set()
-	for role, role_modules in MODULE_WRITE_ACCESS.items():
+	for role, role_modules in _module_write_access().items():
 		if role in roles:
 			modules.update(role_modules)
 	return modules
@@ -40,7 +75,7 @@ def _allowed_modules_for_write(user=None):
 		return None
 
 	modules = set()
-	for role, role_modules in MODULE_WRITE_ACCESS.items():
+	for role, role_modules in _module_write_access().items():
 		if role in roles:
 			modules.update(role_modules)
 	return modules
@@ -79,7 +114,7 @@ def alert_report_condition(user=None, table_alias="a"):
 	"""Return a SQL condition for reports that read Alerta de Inventario directly."""
 	user = user or frappe.session.user
 	roles = _user_roles(user)
-	if REPORTER_ROLE in roles and not roles & (FULL_ACCESS_ROLES | set(MODULE_WRITE_ACCESS) | {"Admin General", "Revisor"}):
+	if REPORTER_ROLE in roles and not roles & (FULL_ACCESS_ROLES | _admin_module_roles() | {GENERAL_ADMIN_ROLE}):
 		return f"`{table_alias}`.`reportado_por` = {frappe.db.escape(user)}"
 
 	modules = _allowed_modules_for_read(user)
@@ -105,7 +140,7 @@ def article_query_conditions(user=None):
 def alert_query_conditions(user=None):
 	user = user or frappe.session.user
 	roles = _user_roles(user)
-	if REPORTER_ROLE in roles and not roles & (FULL_ACCESS_ROLES | set(MODULE_WRITE_ACCESS) | {"Admin General", "Revisor"}):
+	if REPORTER_ROLE in roles and not roles & (FULL_ACCESS_ROLES | _admin_module_roles() | {GENERAL_ADMIN_ROLE}):
 		return f"`tabAlerta de Inventario`.`reportado_por` = {frappe.db.escape(user)}"
 	return _module_condition("Alerta de Inventario", _allowed_modules_for_read(user))
 
@@ -148,7 +183,7 @@ def user_query_conditions(user=None):
 	if roles & SYSTEM_ACCESS_ROLES:
 		return None
 	if INVENTORY_SUPERADMIN_ROLE in roles:
-		inventory_roles = ", ".join(frappe.db.escape(role) for role in sorted(INVENTORY_USER_ROLES))
+		inventory_roles = ", ".join(frappe.db.escape(role) for role in sorted(_inventory_user_roles()))
 		system_roles = ", ".join(frappe.db.escape(role) for role in sorted(SYSTEM_ACCESS_ROLES))
 		return f"""
 			exists (
@@ -164,11 +199,11 @@ def user_query_conditions(user=None):
 				  and `tabHas Role`.`role` in ({system_roles})
 			)
 		"""
-	if roles & LIMITED_USER_ROLES:
+	if roles & _limited_user_roles():
 		# Ver (read) esta permitido entre usuarios del mismo rol (ej. un Admin
 		# Cocina puede ver a otros Admin Cocina), pero modificar sigue limitado
 		# a si mismo (ver user_has_permission). Esto es solo lectura/listado.
-		own_roles = roles & LIMITED_USER_ROLES
+		own_roles = roles & _limited_user_roles()
 		role_list = ", ".join(frappe.db.escape(role) for role in sorted(own_roles))
 		return f"""
 			exists (
@@ -198,7 +233,7 @@ def alert_has_permission(doc, ptype=None, user=None):
 	ptype = ptype or "read"
 	user = user or frappe.session.user
 	roles = _user_roles(user)
-	if REPORTER_ROLE in roles and not roles & (FULL_ACCESS_ROLES | set(MODULE_WRITE_ACCESS) | {"Admin General", "Revisor"}):
+	if REPORTER_ROLE in roles and not roles & (FULL_ACCESS_ROLES | _admin_module_roles() | {GENERAL_ADMIN_ROLE}):
 		if ptype == "create":
 			return True
 		if ptype in {"read", "write", "select", "print"}:
@@ -222,6 +257,15 @@ def movement_has_permission(doc, ptype=None, user=None):
 
 	if ptype in {"read", "select", "print", "email", "report", "export"}:
 		modules = _allowed_modules_for_read(user)
+	elif GENERAL_ADMIN_ROLE in roles:
+		# Admin General ya no administra un modulo propio (el Modulo "General"
+		# se elimino, ver requerimientosNuevos.md punto 5: "General" es la
+		# vista agregada de TODO, no un modulo mas). Conserva la capacidad de
+		# registrar Movimientos (Kardex) en CUALQUIER modulo -- util como rol
+		# de supervisor que ayuda a mover stock donde sea necesario sin ser
+		# dueno de un modulo especifico. NO puede editar el Articulo de
+		# Inventario mismo (eso sigue limitado a quien administra ese modulo).
+		modules = None
 	else:
 		modules = _allowed_modules_for_write(user)
 
@@ -248,15 +292,15 @@ def user_has_permission(doc, ptype=None, user=None):
 		if getattr(doc, "is_new", None) and doc.is_new():
 			return True
 		target_roles = set(frappe.get_roles(doc.name))
-		return bool(target_roles & INVENTORY_USER_ROLES) and not bool(target_roles & SYSTEM_ACCESS_ROLES)
-	if roles & LIMITED_USER_ROLES:
+		return bool(target_roles & _inventory_user_roles()) and not bool(target_roles & SYSTEM_ACCESS_ROLES)
+	if roles & _limited_user_roles():
 		if not doc:
 			return True
 		if doc.name == user:
 			return True
 		if ptype in {"read", "select", "print", "report", "email", "export"}:
 			# Solo lectura: puede ver a otros usuarios con su mismo rol.
-			own_roles = roles & LIMITED_USER_ROLES
+			own_roles = roles & _limited_user_roles()
 			target_roles = set(frappe.get_roles(doc.name))
 			return bool(own_roles & target_roles)
 		# Cualquier modificacion (write/create/delete) sigue limitada a si mismo.
@@ -300,8 +344,9 @@ def validate_data_import_module_scope(doc, method=None):
 	   trae modulo, se lo asignamos automaticamente).
 	"""
 	roles = _user_roles()
-	allowed_modules = MODULE_WRITE_ACCESS.get(
-		next(iter(roles & set(MODULE_WRITE_ACCESS)), None)
+	module_write_access = _module_write_access()
+	allowed_modules = module_write_access.get(
+		next(iter(roles & set(module_write_access)), None)
 	)
 	if not allowed_modules or roles & FULL_ACCESS_ROLES:
 		return
@@ -328,3 +373,21 @@ def validate_data_import_module_scope(doc, method=None):
 				).format(payload.rows[0].row_number, allowed_module),
 				frappe.PermissionError,
 			)
+
+
+def ubicacion_has_permission(doc, ptype=None, user=None):
+	"""Lectura de Ubicacion para cualquier Admin de modulo.
+
+	El doctype Ubicacion solo tiene permisos de lectura hardcodeados para
+	los 3 roles historicos (Admin TI/Cocina/General): un Admin de un modulo
+	creado dinamicamente despues (ej. Admin Estilismo) no podia ver/elegir
+	ubicaciones al crear un Articulo de su propio modulo. Esto da lectura a
+	TODOS los roles "Admin {modulo}" existentes, sin tener que tocar
+	permisos cada vez que se crea un modulo nuevo.
+	"""
+	if ptype != "read":
+		return True
+	roles = _user_roles(user)
+	if roles & (FULL_ACCESS_ROLES | _admin_module_roles()):
+		return True
+	return None

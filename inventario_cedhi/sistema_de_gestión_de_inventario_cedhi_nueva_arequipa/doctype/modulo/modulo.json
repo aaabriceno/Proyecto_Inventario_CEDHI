@@ -2,39 +2,39 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "autoname": "field:nombre_ubicacion",
- "creation": "2026-04-25 20:58:35.265451",
+ "autoname": "field:nombre_modulo",
+ "creation": "2026-06-24 11:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "datos_ubicacion_section",
-  "nombre_ubicacion",
-  "modulo",
-  "activo",
-  "datos_de_ubicacion_section"
+  "datos_modulo_section",
+  "nombre_modulo",
+  "rol_admin",
+  "activo"
  ],
  "fields": [
   {
-   "fieldname": "datos_ubicacion_section",
+   "fieldname": "datos_modulo_section",
    "fieldtype": "Section Break",
-   "label": "Datos de Ubicacion"
+   "label": "Datos del Modulo"
   },
   {
-   "fieldname": "nombre_ubicacion",
+   "fieldname": "nombre_modulo",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Nombre de ubicacion",
-   "reqd": 1
+   "label": "Nombre del modulo",
+   "reqd": 1,
+   "unique": 1
   },
   {
-   "description": "Dejar en blanco si la ubicacion no pertenece a un modulo especifico (ej. Direccion, Garita de Seguridad).",
-   "fieldname": "modulo",
+   "description": "Se crea automaticamente al guardar (rol \"Admin {nombre del modulo}\"). Los usuarios con este rol pueden administrar los articulos de este modulo.",
+   "fieldname": "rol_admin",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Modulo",
-   "options": "Modulo"
+   "label": "Rol administrador",
+   "options": "Role",
+   "read_only": 1
   },
   {
    "default": "Si",
@@ -44,28 +44,23 @@
    "in_standard_filter": 1,
    "label": "Activo",
    "options": "Si\nNo"
-  },
-  {
-   "fieldname": "datos_de_ubicacion_section",
-   "fieldtype": "Section Break",
-   "label": "Datos de Ubicacion"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-17 22:19:01.835382",
+ "modified": "2026-06-24 11:00:00.000000",
  "modified_by": "Administrator",
- "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
- "name": "Ubicacion",
- "owner": "anthonyquiroz305@gmail.com",
+ "module": "Sistema de Gestión de Inventario CEDHI Nueva Arequipa",
+ "name": "Modulo",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
    "delete": 1,
    "email": 1,
    "export": 1,
-   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
@@ -79,7 +74,6 @@
    "delete": 1,
    "email": 1,
    "export": 1,
-   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
@@ -103,7 +97,6 @@
    "select": 1
   },
   {
-   "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
@@ -125,5 +118,5 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "nombre_ubicacion"
+ "title_field": "nombre_modulo"
 }
