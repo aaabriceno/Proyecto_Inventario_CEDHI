@@ -104,6 +104,10 @@ services:
       CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-50m}
     volumes:
       - sites:/home/frappe/frappe-bench/sites
+      # Template nginx propio (server_name "_" en vez del default de la
+      # imagen base) para que el sitio se sirva sin importar por que IP de
+      # la LAN entre el navegador -- ver comentario dentro del archivo.
+      - ./nginx/frappe.conf.template:/templates/nginx/frappe.conf.template:ro
     depends_on:
       backend:
         condition: service_started

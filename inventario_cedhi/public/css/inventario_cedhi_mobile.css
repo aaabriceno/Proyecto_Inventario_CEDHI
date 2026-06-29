@@ -750,6 +750,21 @@ body, .frappe-app {
   border-bottom: 2px solid var(--cedhi-cyan);
 }
 
+/* ── Breadcrumb dentro del navbar (ej. "Inventario CEDHI > Ubicacion") ──
+   Frappe v15 lo renderiza como #navbar-breadcrumbs (ul > li > a) DENTRO del
+   navbar (fondo navy oscuro, ver .navbar arriba), con su color de texto
+   oscuro por defecto -- sin este override queda apenas visible sobre azul.
+   Confirmado el selector real via inspector (no es .breadcrumb-container,
+   ese no existe en este DOM): #navbar-breadcrumbs > li > a. */
+#navbar-breadcrumbs,
+#navbar-breadcrumbs li,
+#navbar-breadcrumbs li a {
+  color: rgba(255,255,255,0.85) !important;
+}
+#navbar-breadcrumbs li a:hover {
+  color: #fff !important;
+}
+
 /* ── Sidebar ── */
 .layout-side-section,
 .desk-sidebar {

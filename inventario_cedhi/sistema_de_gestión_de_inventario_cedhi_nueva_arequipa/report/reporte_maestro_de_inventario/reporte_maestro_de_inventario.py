@@ -90,6 +90,12 @@ def get_columns():
             "fieldname": "codigo_interno",
             "fieldtype": "Data",
             "width": 140
+        },
+        {
+            "label": _("Atributos"),
+            "fieldname": "atributos",
+            "fieldtype": "Data",
+            "width": 220
         }
     ]
 
@@ -110,7 +116,7 @@ def get_data(filters):
     if filters.get("solo_stock_critico"):
         conditions += " and ifnull(a.stock_critico, 0) > 0 and ifnull(a.stock_actual, 0) < ifnull(a.stock_critico, 0)"
 
-    return frappe.db.sql(f"""
+    rows = frappe.db.sql(f"""
         select
             a.name, a.nombre_articulo, a.modulo, a.ubicacion, a.asignacion, a.estado,
             a.stock_actual, a.stock_critico, a.unidad_medida, a.fecha_adquisicion,
@@ -122,3 +128,30 @@ def get_data(filters):
         order by
             a.modulo, a.nombre_articulo
     """, as_dict=1)
+
+    if not rows:
+        return rows
+
+    # Atributos libres (tabla "Atributo de Articulo", ver Parte C): se
+    # concatenan como texto "Caracteristica: Valor; ..." en una sola columna
+    # -- cada articulo puede tener un numero distinto de atributos, no
+    # encajan como columnas fijas en una tabla plana.
+    nombres = [r.name for r in rows]
+    atributos_rows = frappe.db.sql(
+        """
+        select parent, nombre_caracteristica, valor
+        from `tabAtributo de Articulo`
+        where parent in %(nombres)s
+        order by parent, idx
+        """,
+        {"nombres": nombres},
+        as_dict=1,
+    )
+    atributos_por_articulo = {}
+    for ar in atributos_rows:
+        atributos_por_articulo.setdefault(ar.parent, []).append(f"{ar.nombre_caracteristica}: {ar.valor}")
+
+    for r in rows:
+        r["atributos"] = "; ".join(atributos_por_articulo.get(r.name, []))
+
+    return rows

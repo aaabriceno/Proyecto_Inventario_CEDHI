@@ -1,7 +1,7 @@
-"""Pagina de carga de las ubicaciones reales del CEDHI.
+"""Pagina de carga de los modulos reales del CEDHI.
 
-Muestra un boton que dispara el importador idempotente de Ubicacion a partir
-de la lista maestra datos_iniciales/UBICACIONES.xlsx. Solo accesible para
+Muestra un boton que dispara el importador idempotente de Modulo a partir
+de la lista maestra datos_iniciales/MODULOS.xlsx. Solo accesible para
 SuperAdministrador / System Manager.
 """
 
@@ -22,8 +22,8 @@ def get_context(context):
 	context.resultado = None
 
 	if frappe.request and frappe.request.method == "POST" and context.puede_importar:
-		from inventario_cedhi.import_excel_articulos import importar_ubicaciones_reales
+		from inventario_cedhi.import_excel_articulos import importar_modulos_reales
 
-		context.resultado = importar_ubicaciones_reales()
+		context.resultado = importar_modulos_reales()
 
 	return context

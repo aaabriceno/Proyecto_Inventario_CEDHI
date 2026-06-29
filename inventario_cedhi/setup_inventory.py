@@ -2331,31 +2331,54 @@ window.open_quick_reasignar_dialog = function(opts) {
         ],
         primary_action_label: __('Reasignar'),
         primary_action: function(values) {
-            d.get_primary_btn().prop('disabled', true);
-            frappe.call({
-                method: 'inventario_cedhi.inventory_logic.reasignar_articulo',
-                args: {
-                    articulo: opts.articulo,
-                    modulo: values.modulo,
-                    ubicacion: values.ubicacion
-                },
-                callback: function(r) {
-                    d.get_primary_btn().prop('disabled', false);
-                    if (!r.exc) {
-                        frappe.show_alert({
-                            message: __('Articulo reasignado correctamente.'),
-                            indicator: 'green'
-                        });
-                        d.hide();
-                        if (opts.callback) {
-                            opts.callback();
+            let do_reasignar = function() {
+                d.get_primary_btn().prop('disabled', true);
+                frappe.call({
+                    method: 'inventario_cedhi.inventory_logic.reasignar_articulo',
+                    args: {
+                        articulo: opts.articulo,
+                        modulo: values.modulo,
+                        ubicacion: values.ubicacion
+                    },
+                    callback: function(r) {
+                        d.get_primary_btn().prop('disabled', false);
+                        if (!r.exc) {
+                            frappe.show_alert({
+                                message: __('Articulo reasignado correctamente.'),
+                                indicator: 'green'
+                            });
+                            d.hide();
+                            if (opts.callback) {
+                                opts.callback();
+                            }
                         }
+                    },
+                    error: function() {
+                        d.get_primary_btn().prop('disabled', false);
                     }
-                },
-                error: function() {
-                    d.get_primary_btn().prop('disabled', false);
-                }
-            });
+                });
+            };
+
+            // Si el modulo cambia, las caracteristicas adicionales del
+            // articulo (tabla "atributos", ej. "IP asignada") se borran --
+            // una caracteristica de TI no tiene sentido en Mobiliaria. Se
+            // avisa antes de ejecutar, con mensaje distinto si el articulo
+            // tiene o no atributos que se vayan a perder.
+            if (values.modulo !== opts.modulo) {
+                frappe.call({
+                    method: 'inventario_cedhi.inventory_logic.articulo_tiene_atributos',
+                    args: { articulo: opts.articulo },
+                    callback: function(r) {
+                        let tiene_atributos = !!r.message;
+                        let mensaje = tiene_atributos
+                            ? __('Este articulo tiene caracteristicas adicionales (ej. IP asignada) que se ELIMINARAN al cambiar de modulo. ¿Confirma el cambio?')
+                            : __('¿Confirma que desea cambiar este articulo de modulo?');
+                        frappe.confirm(mensaje, do_reasignar);
+                    }
+                });
+            } else {
+                do_reasignar();
+            }
         }
     });
     d.show();
@@ -3033,10 +3056,15 @@ def create_child_workspaces():
 			# Solo visibles en este workspace (roles de arriba: sin Revisor ni
 			# Reportante), a diferencia del padre que antes los mostraba a los 7
 			# roles del CEDHI por igual aunque solo SuperAdmin/System Manager
-			# pueden ejecutar la carga de catalogo (ver data_import.py).
+			# pueden ejecutar la carga/exportacion (ver cargar_ubicaciones.py e
+			# import_excel_articulos.py). Los 2 ultimos exportan via GET directo
+			# al metodo whitelisted (Frappe lo permite con sesion de cookie
+			# activa, sin necesitar una pagina www intermedia).
 			"shortcuts": [
-				{"type": "URL", "url": "/cargar_catalogo", "label": "CARGAR CATÁLOGO INICIAL", "color": "Blue"},
 				{"type": "URL", "url": "/cargar_ubicaciones", "label": "CARGAR UBICACIONES REALES", "color": "Blue"},
+				{"type": "URL", "url": "/cargar_modulos", "label": "CARGAR MODULOS REALES", "color": "Blue"},
+				{"type": "URL", "url": "/api/method/inventario_cedhi.import_excel_articulos.exportar_ubicaciones_excel", "label": "EXPORTAR UBICACIONES", "color": "Green"},
+				{"type": "URL", "url": "/api/method/inventario_cedhi.import_excel_articulos.exportar_modulos_excel", "label": "EXPORTAR MODULOS", "color": "Green"},
 			],
 		}
 	]

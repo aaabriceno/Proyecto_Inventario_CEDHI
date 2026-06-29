@@ -89,3 +89,47 @@ IMPORTANTE: nunca corra "docker compose down -v" (con la "-v") para
 actualizar. Eso SI borra todos los datos del inventario (articulos,
 movimientos, usuarios) de forma permanente. Para actualizar basta con los
 4 comandos de arriba, que no tocan los datos guardados.
+
+ACCESO DESDE OTRAS PCs DEL CEDHI (red local):
+======================================================
+
+El sistema corre completo (base de datos + todo lo demas) en UNA SOLA PC
+(la "PC servidor"). Las demas PCs del CEDHI NO necesitan instalar Docker
+ni nada de este instalador: solo necesitan un navegador y la IP de la PC
+servidor.
+
+1. En la PC servidor, averigue su IP en la red local:
+   - Abra el Simbolo del Sistema (cmd) y escriba: ipconfig
+   - Busque "Direccion IPv4" bajo el adaptador de red activo (WiFi o
+     Ethernet), algo como 192.168.1.50.
+
+2. (Recomendado) Reserve esa IP para que no cambie nunca: entre al panel
+   del router (normalmente 192.168.1.1 en el navegador) y busque la
+   opcion "Reserva de IP" o "DHCP Reservation", asociando la IP a la
+   direccion MAC de la PC servidor. Si esto no es posible, anote la IP
+   actual y verifiquela de nuevo si el sistema deja de responder desde
+   otras PCs (puede haber cambiado).
+
+3. Permita la conexion entrante en el Firewall de Windows de la PC
+   servidor (sin esto, otras PCs no pueden conectarse aunque el sistema
+   este prendido):
+   - Abra "Firewall de Windows Defender con seguridad avanzada".
+   - Clic en "Reglas de entrada" -> "Nueva regla...".
+   - Tipo: Puerto. Protocolo: TCP. Puerto especifico: 8080.
+   - Accion: Permitir la conexion.
+   - Aplique a todos los perfiles (Dominio/Privado/Publico), nombre
+     sugerido: "Inventario CEDHI - acceso LAN".
+
+4. En CUALQUIER otra PC de la misma red (sin instalar nada), abra el
+   navegador y entre a:
+     http://<IP-de-la-PC-servidor>:8080
+   ejemplo: http://192.168.1.50:8080
+
+   Inicie sesion con su usuario y contraseña normal del sistema (los
+   mismos que usa en la PC servidor) -- no hace falta cuenta de Google
+   ni nada adicional.
+
+Si despues de esto otra PC no logra conectarse: confirme que ambas PCs
+estan en la misma red WiFi/cable (no en redes separadas o "invitado"),
+que el Firewall del paso 3 quedo bien configurado, y que la PC servidor
+esta encendida con "Iniciar Sistema CEDHI" ya ejecutado.

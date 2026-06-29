@@ -41,6 +41,8 @@
   "datos_mobiliario_section",
   "cantidad",
   "estado_conservacion",
+  "atributos_section",
+  "atributos",
   "trazabilidad_importacion_section",
   "fuente_datos",
   "hoja_origen",
@@ -282,6 +284,18 @@
    "label": "Estado de conservacion"
   },
   {
+   "fieldname": "atributos_section",
+   "fieldtype": "Section Break",
+   "label": "Caracteristicas Adicionales"
+  },
+  {
+   "description": "Caracteristicas libres especificas de este articulo (ej. \"IP asignada\" para TI). No se ocultan ni cambian segun el modulo: si el articulo se reasigna a otro modulo, revisar si estas caracteristicas siguen aplicando.",
+   "fieldname": "atributos",
+   "fieldtype": "Table",
+   "label": "Atributos",
+   "options": "Atributo de Articulo"
+  },
+  {
    "fieldname": "trazabilidad_importacion_section",
    "fieldtype": "Section Break",
    "label": "Trazabilidad de Importacion"
@@ -306,7 +320,7 @@
  "image_field": "fotografia",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-28 18:51:43.345043",
+ "modified": "2026-06-29 11:54:53.833911",
  "modified_by": "Administrator",
  "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
  "name": "Articulo de Inventario",

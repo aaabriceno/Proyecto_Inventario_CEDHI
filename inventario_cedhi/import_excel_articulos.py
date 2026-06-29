@@ -1,5 +1,5 @@
 """Importador de Articulo de Inventario desde la plantilla Excel real del
-CEDHI (formato "CARITAS" con columna Modulo, ver datos_iniciales/INVENTARIO_2026/).
+CEDHI (formato "CARITAS" con columna Modulo, ver datos_iniciales/).
 
 Header en la fila 11 (B/R/M en fila 12), datos desde la fila 13. Columnas
 confirmadas en "1. DIRECCION.xlsx" (plantilla definitiva del encargado del
@@ -24,7 +24,7 @@ import os
 import frappe
 import openpyxl
 
-INVENTARIO_2026_DIR = os.path.join("datos_iniciales", "INVENTARIO_2026")
+DATOS_INICIALES_DIR = "datos_iniciales"
 
 HEADER_ROW = 11
 FIRST_DATA_ROW = 13
@@ -97,15 +97,15 @@ def _resolve_modulo(nombre):
 
 def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 	"""Importa los articulos de una hoja del Excel `filename` (dentro de
-	datos_iniciales/INVENTARIO_2026/). Si `sheet_name` es None, usa la primera hoja.
+	datos_iniciales/). Si `sheet_name` es None, usa la primera hoja.
 
 	Devuelve un resumen: creados, saltados (ya existian), errores (fila ->
 	motivo, ej. ubicacion/modulo no encontrado).
 	"""
 	# os.path.basename evita path traversal (ej. filename="../../etc/passwd"):
-	# sin esto, un filename con ".." podria escapar de INVENTARIO_2026_DIR.
+	# sin esto, un filename con ".." podria escapar de DATOS_INICIALES_DIR.
 	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
-	path = os.path.join(app_path, INVENTARIO_2026_DIR, os.path.basename(filename))
+	path = os.path.join(app_path, DATOS_INICIALES_DIR, os.path.basename(filename))
 	if not os.path.isfile(path):
 		frappe.throw(f"No se encontro el archivo {path}")
 
@@ -219,3 +219,183 @@ def importar_articulos_excel_endpoint(filename, sheet_name=None, dry_run=False):
 	if isinstance(dry_run, str):
 		dry_run = dry_run.lower() in ("1", "true", "yes")
 	return importar_articulos_excel(filename, sheet_name=sheet_name, dry_run=dry_run)
+
+
+UBICACIONES_MAESTRO_FILENAME = "UBICACIONES.xlsx"
+
+
+def importar_ubicaciones_reales():
+	"""Crea (idempotente) las Ubicaciones reales del CEDHI a partir de la
+	lista maestra `datos_iniciales/UBICACIONES.xlsx` (1 columna "Nombre
+	Ubicacion", 1 fila por ubicacion).
+
+	Antes esto escaneaba los nombres de archivo de la carpeta de Excel de
+	articulos (INVENTARIO_2026/), lo cual mezclaba "que ubicaciones existen"
+	con "que archivos de carga hay" -- una carpeta con archivos que no son
+	ubicaciones (ej. INVENTARIO DE LICORES.xlsx) rompia esa inferencia. La
+	lista maestra es la fuente de verdad explicita: agregar una ubicacion
+	nueva es agregar una fila a este Excel y volver a cargar (las que ya
+	existen se saltan, no se duplican).
+
+	El modulo queda vacio: el CEDHI aun no ha definido a que modulo
+	pertenece cada ubicacion (ej. Direccion no pertenece a ningun modulo),
+	asi que no se fuerza un valor.
+	"""
+	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+	path = os.path.join(app_path, DATOS_INICIALES_DIR, UBICACIONES_MAESTRO_FILENAME)
+	if not os.path.isfile(path):
+		frappe.throw(f"No se encontro el archivo maestro de ubicaciones: {path}")
+
+	wb = openpyxl.load_workbook(path, data_only=True)
+	ws = wb[wb.sheetnames[0]]
+
+	creadas = []
+	saltadas = []
+	for row in range(2, ws.max_row + 1):
+		nombre = _clean(ws.cell(row=row, column=1).value)
+		if not nombre:
+			continue
+		if frappe.db.exists("Ubicacion", {"nombre_ubicacion": nombre}):
+			saltadas.append(nombre)
+			continue
+		doc = frappe.get_doc({
+			"doctype": "Ubicacion",
+			"nombre_ubicacion": nombre,
+			"activo": "Si",
+		})
+		doc.insert(ignore_permissions=True)
+		creadas.append(nombre)
+
+	frappe.db.commit()
+	return {"creadas": creadas, "saltadas": saltadas}
+
+
+@frappe.whitelist()
+def importar_ubicaciones_reales_endpoint():
+	"""Endpoint llamable desde la UI (boton del workspace Configuracion).
+
+	Solo SuperAdministrador/System Manager pueden ejecutarlo, igual que la
+	importacion de articulos. Es rapido (~30 registros): no necesita
+	encolarse en background.
+	"""
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para importar las ubicaciones reales.")
+	return importar_ubicaciones_reales()
+
+
+MODULOS_MAESTRO_FILENAME = "MODULOS.xlsx"
+
+
+def importar_modulos_reales():
+	"""Crea (idempotente) los Modulo reales del CEDHI a partir de la lista
+	maestra `datos_iniciales/MODULOS.xlsx` (1 columna "Nombre Modulo", 1 fila
+	por modulo) -- mismo patron que `importar_ubicaciones_reales`.
+
+	Insertar un Modulo dispara `Modulo.before_insert` (ver modulo.py), que
+	autogenera el Role "Admin {nombre}" y sus permisos base -- no hace falta
+	nada mas aqui.
+	"""
+	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+	path = os.path.join(app_path, DATOS_INICIALES_DIR, MODULOS_MAESTRO_FILENAME)
+	if not os.path.isfile(path):
+		frappe.throw(f"No se encontro el archivo maestro de modulos: {path}")
+
+	wb = openpyxl.load_workbook(path, data_only=True)
+	ws = wb[wb.sheetnames[0]]
+
+	creados = []
+	saltados = []
+	for row in range(2, ws.max_row + 1):
+		nombre = _clean(ws.cell(row=row, column=1).value)
+		if not nombre:
+			continue
+		if frappe.db.exists("Modulo", nombre):
+			saltados.append(nombre)
+			continue
+		doc = frappe.get_doc({
+			"doctype": "Modulo",
+			"nombre_modulo": nombre,
+			"activo": "Si",
+		})
+		doc.insert(ignore_permissions=True)
+		creados.append(nombre)
+
+	frappe.db.commit()
+	return {"creados": creados, "saltados": saltados}
+
+
+@frappe.whitelist()
+def importar_modulos_reales_endpoint():
+	"""Endpoint llamable desde la UI (boton del workspace Configuracion).
+
+	Solo SuperAdministrador/System Manager pueden ejecutarlo, igual que el
+	resto de importadores -- crear un Modulo ya esta restringido a esos roles
+	en modulo.json, esto solo agrega el flujo masivo via Excel.
+	"""
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para importar los modulos reales.")
+	return importar_modulos_reales()
+
+
+@frappe.whitelist()
+def exportar_ubicaciones_excel():
+	"""Genera un .xlsx con todas las Ubicacion existentes en la BD (nombre,
+	modulo, activo) -- respaldo/vista rapida para el SuperAdmin, sin
+	depender del export generico de Frappe.
+	"""
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para exportar ubicaciones.")
+
+	ubicaciones = frappe.get_all(
+		"Ubicacion",
+		fields=["nombre_ubicacion", "modulo", "activo"],
+		order_by="nombre_ubicacion",
+	)
+
+	wb = openpyxl.Workbook()
+	ws = wb.active
+	ws.title = "Ubicaciones"
+	ws.append(["Nombre Ubicacion", "Modulo", "Activo"])
+	for u in ubicaciones:
+		ws.append([u.nombre_ubicacion, u.modulo or "", u.activo or ""])
+
+	frappe.local.response.filename = "ubicaciones_cedhi.xlsx"
+	frappe.local.response.filecontent = _workbook_to_bytes(wb)
+	frappe.local.response.type = "binary"
+
+
+@frappe.whitelist()
+def exportar_modulos_excel():
+	"""Genera un .xlsx con todos los Modulo existentes en la BD (nombre,
+	rol_admin) -- respaldo/vista rapida para el SuperAdmin.
+	"""
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para exportar modulos.")
+
+	modulos = frappe.get_all(
+		"Modulo",
+		fields=["nombre_modulo", "rol_admin"],
+		order_by="nombre_modulo",
+	)
+
+	wb = openpyxl.Workbook()
+	ws = wb.active
+	ws.title = "Modulos"
+	ws.append(["Nombre Modulo", "Rol Admin"])
+	for m in modulos:
+		ws.append([m.nombre_modulo, m.rol_admin or ""])
+
+	frappe.local.response.filename = "modulos_cedhi.xlsx"
+	frappe.local.response.filecontent = _workbook_to_bytes(wb)
+	frappe.local.response.type = "binary"
+
+
+def _workbook_to_bytes(wb):
+	import io
+	buffer = io.BytesIO()
+	wb.save(buffer)
+	return buffer.getvalue()

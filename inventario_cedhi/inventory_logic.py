@@ -201,6 +201,12 @@ def reasignar_articulo(articulo, modulo, ubicacion):
     antes de moverlo, no a donde lo manda (decision confirmada con el
     usuario: a diferencia de Ubicacion, que es independiente de modulo,
     el modulo de un Articulo SI es la unidad de responsabilidad real).
+
+    Si el modulo cambia, se borran los atributos libres (tabla `atributos`,
+    ej. "IP asignada"): una caracteristica de TI no tiene sentido si el
+    articulo pasa a Mobiliaria. El aviso/confirmacion de que esto va a
+    pasar vive en el dialog del frontend (ver reasignar_dialog_helper en
+    setup_inventory.py), aqui solo se ejecuta el borrado ya confirmado.
     """
     doc = frappe.get_doc("Articulo de Inventario", articulo)
     if not doc.has_permission("write"):
@@ -209,10 +215,24 @@ def reasignar_articulo(articulo, modulo, ubicacion):
             frappe.PermissionError,
         )
 
+    if doc.modulo != modulo:
+        doc.atributos = []
+
     doc.modulo = modulo
     doc.ubicacion = ubicacion
     doc.save(ignore_permissions=True)
     return doc.name
+
+
+@frappe.whitelist()
+def articulo_tiene_atributos(articulo):
+    """Devuelve True si el Articulo tiene al menos 1 fila en `atributos`.
+
+    Usado por el dialog de Reasignar (frontend) para decidir el texto del
+    aviso de confirmacion antes de cambiar de modulo: distinto mensaje si
+    hay atributos que se van a perder vs si no hay nada que perder.
+    """
+    return bool(frappe.db.count("Atributo de Articulo", {"parent": articulo}))
 
 
 def force_spanish_language(*args, **kwargs):

@@ -189,13 +189,15 @@ if (window.frappe && typeof frappe.after_ajax === "function") {
     });
 }
 
-// Algunos shortcuts del workspace "Inventario CEDHI" solo funcionan para
-// ciertos roles (el server-side ya los bloquea, ver data_import.py), pero
-// Frappe no permite ocultar un shortcut individual por rol dentro de un mismo
-// workspace (el campo "roles" del Workspace oculta el workspace ENTERO, no
-// shortcuts sueltos). Los botones de carga masiva (CARGAR CATALOGO INICIAL/
-// CARGAR UBICACIONES REALES) solo los puede ejecutar SuperAdmin/System
-// Manager, asi que los ocultamos via JS para el resto.
+// Los shortcuts "CARGAR UBICACIONES REALES"/"EXPORTAR UBICACIONES"/
+// "EXPORTAR MODULOS" del workspace "Configuración" solo funcionan para
+// SuperAdmin/System Manager (el server-side ya lo bloquea, ver
+// cargar_ubicaciones.py / import_excel_articulos.py), pero ese workspace
+// tambien lo ven Admin TI/Admin Cocina (ver roles del workspace en
+// setup_inventory.py) -- Frappe no permite ocultar un shortcut individual
+// por rol dentro de un mismo workspace (el campo "roles" del Workspace
+// oculta el workspace ENTERO, no shortcuts sueltos) -- por eso se oculta
+// via JS para el resto de roles.
 function cedhi_hide_restricted_shortcuts() {
     var roles = (window.frappe && frappe.user_roles) || [];
     var fullAccess = ['SuperAdministrador Inventario', 'System Manager', 'Administrator'];
@@ -205,7 +207,7 @@ function cedhi_hide_restricted_shortcuts() {
         var label = box.textContent || '';
         var widget = box.closest('.widget') || box;
 
-        if (!hasFullAccess && label.indexOf('CARGAR') !== -1) {
+        if (!hasFullAccess && (label.indexOf('CARGAR') !== -1 || label.indexOf('EXPORTAR') !== -1)) {
             widget.style.setProperty('display', 'none', 'important');
         }
     });
