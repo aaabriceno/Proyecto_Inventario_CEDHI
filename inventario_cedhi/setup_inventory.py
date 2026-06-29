@@ -473,29 +473,39 @@ def add_gastronomy_catalog_fields():
 
 
 def configure_module_specific_article_form():
-	"""Oculta los campos de insumos perecibles (Gastronomia), sin uso por ahora.
+	"""Muestra los campos de insumos perecibles solo si es_perecible='Si'.
 
 	Con modulos creables dinamicamente ya no hay un set fijo de 3 modulos
 	para condicionar `depends_on` por nombre exacto (`eval:doc.modulo=="TI"`
 	etc): todos los modulos comparten el mismo set de campos fisicos
-	(marca, modelo, cantidad, estado_conservacion), siempre visibles. Los
-	campos de insumos perecibles (stock, grupo, categoria, etc) quedan
-	ocultos (`hidden: 1`) y sin uso por ahora -- ese enfoque se retoma
-	despues, fuera de alcance de este cambio.
+	(marca, modelo, cantidad, estado_conservacion), siempre visibles.
+
+	Los campos de insumos perecibles (stock, grupo, categoria, etc) ya NO
+	se ocultan por modulo: se condicionan por el valor del propio campo
+	`es_perecible` (Select Si/No), sin importar el modulo del articulo --
+	decision confirmada con el usuario (sesion perecibles): un insumo
+	perecible puede existir en cualquier modulo, no solo Gastronomia.
+	`es_perecible` mismo no puede depender de si mismo, queda siempre
+	visible.
 	"""
 	doctype_name = "Articulo de Inventario"
 	doc = frappe.get_doc("DocType", doctype_name)
 
-	hidden_perecibles = {
-		"datos_de_stock_section", "stock_actual", "stock_critico", "unidad_medida",
-		"es_perecible", "fecha_vencimiento", "datos_catalogo_gastronomia_section",
-		"grupo", "categoria", "presentacion", "proveedor_referencia", "medida",
-		"porcentaje_desperdicio", "cantidad_minima", "precio_referencial",
+	perecible_condicional = {
+		"stock_actual", "stock_critico", "unidad_medida",
+		"fecha_vencimiento", "grupo", "categoria", "presentacion",
+		"proveedor_referencia", "medida", "porcentaje_desperdicio",
+		"cantidad_minima", "precio_referencial",
 	}
+	siempre_visibles = {"datos_de_stock_section", "es_perecible", "datos_catalogo_gastronomia_section"}
 
 	for field in doc.fields:
-		if field.fieldname in hidden_perecibles:
-			field.hidden = 1
+		if field.fieldname in perecible_condicional:
+			field.hidden = 0
+			field.depends_on = "eval:doc.es_perecible=='Si'"
+			field.mandatory_depends_on = ""
+		elif field.fieldname in siempre_visibles:
+			field.hidden = 0
 			field.depends_on = ""
 			field.mandatory_depends_on = ""
 		elif field.fieldname in ("marca", "modelo", "datos_tecnicos_section", "datos_mobiliario_section"):
@@ -506,7 +516,7 @@ def configure_module_specific_article_form():
 	frappe.db.commit()
 	frappe.clear_cache(doctype=doctype_name)
 
-	return {"hidden": sorted(hidden_perecibles)}
+	return {"depends_on_es_perecible": sorted(perecible_condicional)}
 
 
 def configure_article_status_options():
@@ -625,9 +635,9 @@ def ensure_initial_modules():
 def ensure_initial_reference_data():
 	"""Ensure import target locations and assignments exist; return their names."""
 	records = [
-		("Ubicacion", "nombre_ubicacion", "Laboratorio de computo", "TI"),
+		("Ubicacion", "nombre_ubicacion", "Laboratorio de Computo", "TI"),
 		("Ubicacion", "nombre_ubicacion", "Almacen Soldadura", "TI"),
-		("Asignacion", "nombre_asignacion", "Laboratorio de computo", "TI"),
+		("Asignacion", "nombre_asignacion", "Laboratorio de Computo", "TI"),
 		("Asignacion", "nombre_asignacion", "Almacen Soldadura", "TI"),
 	]
 	result = {}

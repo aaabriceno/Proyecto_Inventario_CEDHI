@@ -149,28 +149,27 @@
   {
    "fieldname": "datos_de_stock_section",
    "fieldtype": "Section Break",
-   "hidden": 1,
    "label": "Datos de Stock"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "stock_actual",
    "fieldtype": "Float",
-   "hidden": 1,
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Stock actual"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "stock_critico",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Stock critico"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "unidad_medida",
    "fieldtype": "Data",
-   "hidden": 1,
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
@@ -180,16 +179,15 @@
    "default": "No",
    "fieldname": "es_perecible",
    "fieldtype": "Select",
-   "hidden": 1,
    "in_filter": 1,
    "in_standard_filter": 1,
    "label": "Es perecible",
    "options": "Si\nNo"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "fecha_vencimiento",
    "fieldtype": "Date",
-   "hidden": 1,
    "label": "Fecha de vencimiento"
   },
   {
@@ -212,60 +210,59 @@
   {
    "fieldname": "datos_catalogo_gastronomia_section",
    "fieldtype": "Section Break",
-   "hidden": 1,
    "label": "Datos de Catalogo Gastronomia"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "grupo",
    "fieldtype": "Data",
-   "hidden": 1,
    "in_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Grupo"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "categoria",
    "fieldtype": "Data",
-   "hidden": 1,
    "in_filter": 1,
    "in_standard_filter": 1,
    "label": "Categoria"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "presentacion",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Presentacion"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "proveedor_referencia",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Proveedor de referencia"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "medida",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Medida"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "porcentaje_desperdicio",
    "fieldtype": "Percent",
-   "hidden": 1,
    "label": "Porcentaje desperdicio"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "cantidad_minima",
    "fieldtype": "Float",
-   "hidden": 1,
    "label": "Cantidad minima"
   },
   {
+   "depends_on": "eval:doc.es_perecible=='Si'",
    "fieldname": "precio_referencial",
    "fieldtype": "Currency",
-   "hidden": 1,
    "label": "Precio referencial"
   },
   {
@@ -320,7 +317,7 @@
  "image_field": "fotografia",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-29 11:54:53.833911",
+ "modified": "2026-06-29 16:20:51.305614",
  "modified_by": "Administrator",
  "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
  "name": "Articulo de Inventario",

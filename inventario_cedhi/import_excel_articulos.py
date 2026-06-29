@@ -399,3 +399,141 @@ def _workbook_to_bytes(wb):
 	buffer = io.BytesIO()
 	wb.save(buffer)
 	return buffer.getvalue()
+
+
+INSUMOS_GASTRONOMIA_FILENAME = "lista de insumos gastronomia.xlsx"
+INSUMOS_GASTRONOMIA_SHEET = "INSUMOS"
+INSUMOS_GASTRONOMIA_MODULO = "Gastronomia"
+INSUMOS_GASTRONOMIA_UBICACION = "Almacen Gastronomia"
+
+INSUMOS_HEADER_ROW = 1
+INSUMOS_FIRST_DATA_ROW = 2
+
+COL_INSUMO_CODIGO = 2
+COL_INSUMO_GRUPO = 3
+COL_INSUMO_CATEGORIA = 4
+COL_INSUMO_MARCA = 5
+COL_INSUMO_UNIDAD_MEDIDA = 6
+COL_INSUMO_PRESENTACION = 7
+COL_INSUMO_PROVEEDOR = 8
+COL_INSUMO_NOMBRE = 9
+COL_INSUMO_PERECEDERO = 10
+COL_INSUMO_MEDIDA = 11
+COL_INSUMO_DESPERDICIO = 12
+COL_INSUMO_CANTIDAD_MINIMA = 13
+COL_INSUMO_PRECIO_PRESENTACION = 18
+
+
+def _to_float(value):
+	try:
+		return float(value) if value not in (None, "") else None
+	except (ValueError, TypeError):
+		return None
+
+
+def importar_insumos_gastronomia(dry_run=False):
+	"""Importa el catalogo de insumos perecibles de Gastronomia desde
+	`datos_iniciales/lista de insumos gastronomia.xlsx` (hoja "INSUMOS").
+
+	Formato distinto al de `importar_articulos_excel` (catalogo de insumos,
+	no inventario fisico de bienes contados por ubicacion/CANT.): no trae
+	columna Ubicacion ni Modulo -- se fija Modulo="Gastronomia" y
+	Ubicacion="Almacen Gastronomia" (el area real del Excel de Gastronomia
+	donde se almacenan estos insumos, ver datos_iniciales/20.GASTRONOMIA.xlsx
+	hoja " ALMACEN ").
+
+	El "Codigo Articulo" del Excel (1..~875) es un codigo de catalogo
+	interno del CEDHI, no el identificador del sistema -- se usa solo para
+	idempotencia (numero_origen), igual patron que importar_articulos_excel.
+	El name/codigo_interno del Articulo los sigue generando el sistema como
+	siempre, sin guardar ese codigo de catalogo en ningun campo propio.
+	"""
+	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+	path = os.path.join(app_path, DATOS_INICIALES_DIR, INSUMOS_GASTRONOMIA_FILENAME)
+	if not os.path.isfile(path):
+		frappe.throw(f"No se encontro el archivo {path}")
+
+	modulo = _resolve_modulo(INSUMOS_GASTRONOMIA_MODULO)
+	if not modulo:
+		frappe.throw(f"Modulo '{INSUMOS_GASTRONOMIA_MODULO}' no encontrado en el sistema")
+	ubicacion = _resolve_ubicacion(INSUMOS_GASTRONOMIA_UBICACION)
+	if not ubicacion:
+		frappe.throw(f"Ubicacion '{INSUMOS_GASTRONOMIA_UBICACION}' no encontrada en el sistema")
+
+	wb = openpyxl.load_workbook(path, data_only=True)
+	ws = wb[INSUMOS_GASTRONOMIA_SHEET]
+
+	creados = []
+	saltados = []
+	errores = []
+
+	for row in range(INSUMOS_FIRST_DATA_ROW, ws.max_row + 1):
+		codigo_origen = ws.cell(row=row, column=COL_INSUMO_CODIGO).value
+		nombre_insumo = _clean(ws.cell(row=row, column=COL_INSUMO_NOMBRE).value)
+		if codigo_origen is None and not nombre_insumo:
+			continue
+		if not nombre_insumo:
+			errores.append((row, "sin Nombre Insumo, fila saltada"))
+			continue
+
+		numero_origen = str(codigo_origen)
+		ya_existe = frappe.db.exists("Articulo de Inventario", {
+			"fuente_datos": INSUMOS_GASTRONOMIA_FILENAME,
+			"hoja_origen": INSUMOS_GASTRONOMIA_SHEET,
+			"numero_origen": numero_origen,
+		})
+		if ya_existe:
+			saltados.append(row)
+			continue
+
+		if dry_run:
+			creados.append(row)
+			continue
+
+		perecedero_raw = _clean(ws.cell(row=row, column=COL_INSUMO_PERECEDERO).value).upper()
+		es_perecible = "Si" if perecedero_raw == "SI" else "No"
+
+		doc = frappe.get_doc({
+			"doctype": "Articulo de Inventario",
+			"nombre_articulo": nombre_insumo,
+			"modulo": modulo,
+			"ubicacion": ubicacion,
+			"estado": "Activo",
+			"marca": _clean(ws.cell(row=row, column=COL_INSUMO_MARCA).value),
+			"cantidad": 1,
+			"grupo": _clean(ws.cell(row=row, column=COL_INSUMO_GRUPO).value),
+			"categoria": _clean(ws.cell(row=row, column=COL_INSUMO_CATEGORIA).value),
+			"unidad_medida": _clean(ws.cell(row=row, column=COL_INSUMO_UNIDAD_MEDIDA).value),
+			"presentacion": _clean(ws.cell(row=row, column=COL_INSUMO_PRESENTACION).value),
+			"proveedor_referencia": _clean(ws.cell(row=row, column=COL_INSUMO_PROVEEDOR).value),
+			"es_perecible": es_perecible,
+			"medida": _to_float(ws.cell(row=row, column=COL_INSUMO_MEDIDA).value),
+			"porcentaje_desperdicio": _to_float(ws.cell(row=row, column=COL_INSUMO_DESPERDICIO).value),
+			"cantidad_minima": _to_float(ws.cell(row=row, column=COL_INSUMO_CANTIDAD_MINIMA).value),
+			"precio_referencial": _to_float(ws.cell(row=row, column=COL_INSUMO_PRECIO_PRESENTACION).value),
+			"fuente_datos": INSUMOS_GASTRONOMIA_FILENAME,
+			"hoja_origen": INSUMOS_GASTRONOMIA_SHEET,
+			"numero_origen": numero_origen,
+		})
+		doc.insert(ignore_permissions=True)
+		creados.append(row)
+
+	if not dry_run:
+		frappe.db.commit()
+
+	return {
+		"archivo": INSUMOS_GASTRONOMIA_FILENAME,
+		"creados": len(creados),
+		"saltados": len(saltados),
+		"errores": errores,
+	}
+
+
+@frappe.whitelist()
+def importar_insumos_gastronomia_endpoint(dry_run=False):
+	roles = set(frappe.get_roles())
+	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
+		frappe.throw("No tiene permiso para importar insumos de gastronomia.")
+	if isinstance(dry_run, str):
+		dry_run = dry_run.lower() in ("1", "true", "yes")
+	return importar_insumos_gastronomia(dry_run=dry_run)
