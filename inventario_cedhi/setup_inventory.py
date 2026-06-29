@@ -2629,7 +2629,15 @@ frappe.listview_settings['Articulo de Inventario'].refresh = function(listview) 
 	return results
 
 def create_inventory_print_formats():
-	"""Create Custom Print Formats for Inventory (QR Labels and Movement Vouchers)."""
+	"""Create Custom Print Formats for Inventory (QR Labels and Movement Vouchers).
+
+	El QR codifica `doc.name` (hash permanente del Articulo), NO
+	codigo_interno: ese ultimo cambia si el articulo se reasigna de
+	modulo/ubicacion (ver set_internal_code en inventory_logic.py), lo que
+	dejaria una etiqueta ya impresa y pegada en el objeto fisico obsoleta.
+	`buscar_articulo_por_codigo` (inventory_logic.py) ya sabe resolver por
+	name directo, sin necesitar cambios ahi.
+	"""
 	formats = [
 		{
 			"name": "Etiqueta CEDHI QR",
@@ -2678,9 +2686,9 @@ def create_inventory_print_formats():
     <div class="label-header">INSTITUTO CEDHI</div>
     <div class="label-title">{{ doc.nombre_articulo }}</div>
     <div class="label-qr">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ doc.codigo_barras or doc.codigo_interno or doc.name }}" style="width: 80px; height: 80px;"/>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ doc.name }}" style="width: 80px; height: 80px;"/>
     </div>
-    <div class="label-code">{{ doc.codigo_interno or doc.name }}</div>
+    <div class="label-code">{{ doc.name }}</div>
 </div>
 			"""
 		},
