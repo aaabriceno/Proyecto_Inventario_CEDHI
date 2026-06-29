@@ -95,17 +95,32 @@ def _resolve_modulo(nombre):
 	return None
 
 
-def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
+def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path=None):
 	"""Importa los articulos de una hoja del Excel `filename` (dentro de
-	datos_iniciales/). Si `sheet_name` es None, usa la primera hoja.
+	datos_iniciales/, salvo que se pase `full_path`). Si `sheet_name` es
+	None, usa la primera hoja.
+
+	`full_path`: ruta absoluta a usar en vez de buscar `filename` dentro de
+	DATOS_INICIALES_DIR -- usado por la subida desde la UI
+	(importar_excel_subido_endpoint), donde el archivo vive como adjunto
+	Frappe File fuera del repo, no en datos_iniciales/. `filename` sigue
+	usandose como fuente_datos/trazabilidad aunque se use full_path.
 
 	Devuelve un resumen: creados, saltados (ya existian), errores (fila ->
-	motivo, ej. ubicacion/modulo no encontrado).
+	motivo, ej. ubicacion/modulo no encontrado). Ademas de los counts (para
+	no romper a quien ya consume `creados`/`saltados` como `len()`), incluye
+	`detalle_creados`/`detalle_saltados`/`detalle_errores`: listas de dict
+	con los datos de cada fila (nombre, ubicacion, modulo, motivo de error)
+	-- usado por la pagina de subida con preview (www/importar_articulos)
+	para mostrar una tabla legible antes de tocar la BD, no solo un conteo.
 	"""
-	# os.path.basename evita path traversal (ej. filename="../../etc/passwd"):
-	# sin esto, un filename con ".." podria escapar de DATOS_INICIALES_DIR.
-	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
-	path = os.path.join(app_path, DATOS_INICIALES_DIR, os.path.basename(filename))
+	if full_path:
+		path = full_path
+	else:
+		# os.path.basename evita path traversal (ej. filename="../../etc/passwd"):
+		# sin esto, un filename con ".." podria escapar de DATOS_INICIALES_DIR.
+		app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+		path = os.path.join(app_path, DATOS_INICIALES_DIR, os.path.basename(filename))
 	if not os.path.isfile(path):
 		frappe.throw(f"No se encontro el archivo {path}")
 
@@ -116,6 +131,9 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 	creados = []
 	saltados = []
 	errores = []
+	detalle_creados = []
+	detalle_saltados = []
+	detalle_errores = []
 
 	for row in range(FIRST_DATA_ROW, ws.max_row + 1):
 		numero_origen = ws.cell(row=row, column=1).value
@@ -129,19 +147,25 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 		except (ValueError, TypeError):
 			cantidad = 0
 		if cantidad <= 0:
-			errores.append((row, f"cantidad invalida ({cantidad_raw!r}), fila saltada"))
+			motivo = f"cantidad invalida ({cantidad_raw!r}), fila saltada"
+			errores.append((row, motivo))
+			detalle_errores.append({"row": row, "nombre_articulo": descripcion, "motivo": motivo})
 			continue
 
 		ubicacion_nombre = _clean(ws.cell(row=row, column=COL_UBICACION).value)
 		ubicacion = _resolve_ubicacion(ubicacion_nombre)
 		if not ubicacion:
-			errores.append((row, f"ubicacion '{ubicacion_nombre}' no encontrada en el sistema"))
+			motivo = f"ubicacion '{ubicacion_nombre}' no encontrada en el sistema"
+			errores.append((row, motivo))
+			detalle_errores.append({"row": row, "nombre_articulo": descripcion, "motivo": motivo})
 			continue
 
 		modulo_nombre = _clean(ws.cell(row=row, column=COL_MODULO).value)
 		modulo = _resolve_modulo(modulo_nombre)
 		if not modulo:
-			errores.append((row, f"modulo '{modulo_nombre}' no encontrado en el sistema"))
+			motivo = f"modulo '{modulo_nombre}' no encontrado en el sistema"
+			errores.append((row, motivo))
+			detalle_errores.append({"row": row, "nombre_articulo": descripcion, "motivo": motivo})
 			continue
 
 		estado, estado_conservacion = _estado_desde_fila(ws, row)
@@ -159,6 +183,15 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 
 		for unidad in range(1, cantidad + 1):
 			numero_origen_unidad = f"{numero_origen}-{unidad}" if cantidad > 1 else str(numero_origen)
+			fila_detalle = {
+				"row": row,
+				"unidad": unidad,
+				"nombre_articulo": descripcion,
+				"ubicacion": ubicacion,
+				"modulo": modulo,
+				"marca": marca,
+				"estado": estado,
+			}
 
 			ya_existe = frappe.db.exists("Articulo de Inventario", {
 				"fuente_datos": fuente_datos,
@@ -167,10 +200,12 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 			})
 			if ya_existe:
 				saltados.append((row, unidad))
+				detalle_saltados.append(fila_detalle)
 				continue
 
 			if dry_run:
 				creados.append((row, unidad))
+				detalle_creados.append(fila_detalle)
 				continue
 
 			doc = frappe.get_doc({
@@ -198,6 +233,7 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 			})
 			doc.insert(ignore_permissions=True)
 			creados.append((row, unidad))
+			detalle_creados.append(fila_detalle)
 
 	if not dry_run:
 		frappe.db.commit()
@@ -208,17 +244,92 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False):
 		"creados": len(creados),
 		"saltados": len(saltados),
 		"errores": errores,
+		"detalle_creados": detalle_creados,
+		"detalle_saltados": detalle_saltados,
+		"detalle_errores": detalle_errores,
 	}
+
+
+IMPORT_ALLOWED_ROLES = {"System Manager", "SuperAdministrador Inventario", "Administrator"}
+
+
+def _require_import_role():
+	roles = set(frappe.get_roles())
+	if not roles & IMPORT_ALLOWED_ROLES:
+		frappe.throw("No tiene permiso para importar articulos.")
 
 
 @frappe.whitelist()
 def importar_articulos_excel_endpoint(filename, sheet_name=None, dry_run=False):
-	roles = set(frappe.get_roles())
-	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
-		frappe.throw("No tiene permiso para importar articulos.")
+	_require_import_role()
 	if isinstance(dry_run, str):
 		dry_run = dry_run.lower() in ("1", "true", "yes")
 	return importar_articulos_excel(filename, sheet_name=sheet_name, dry_run=dry_run)
+
+
+@frappe.whitelist()
+def subir_excel_y_previsualizar():
+	"""Recibe un .xlsx subido desde el navegador (www/importar_articulos),
+	lo guarda como Frappe File privado (huerfano, sin doctype padre -- solo
+	vive mientras el SuperAdmin decide confirmar o no), y corre el
+	importador en `dry_run=True` sobre ese archivo para armar el preview.
+
+	Devuelve el `file_name` (id del File) para que el paso de confirmar
+	(`confirmar_importacion_excel_endpoint`) lo reutilice sin volver a
+	subirlo, mas el resumen del dry_run (detalle_creados/saltados/errores).
+	"""
+	_require_import_role()
+
+	if "file" not in frappe.request.files:
+		frappe.throw("No se recibio ningun archivo.")
+	upload = frappe.request.files["file"]
+	if not upload.filename.lower().endswith(".xlsx"):
+		frappe.throw("Solo se aceptan archivos .xlsx.")
+
+	from frappe.utils.file_manager import save_file
+
+	content = upload.stream.read()
+	file_doc = save_file(upload.filename, content, None, None, is_private=1)
+
+	sheet_name = None
+	wb = openpyxl.load_workbook(file_doc.get_full_path(), data_only=True)
+	sheet_name = wb.sheetnames[0]
+
+	resultado = importar_articulos_excel(
+		upload.filename,
+		sheet_name=sheet_name,
+		dry_run=True,
+		full_path=file_doc.get_full_path(),
+	)
+	resultado["file_name"] = file_doc.name
+	return resultado
+
+
+@frappe.whitelist()
+def confirmar_importacion_excel_endpoint(file_name, sheet_name=None):
+	"""Confirma la importacion real (dry_run=False) sobre el File ya subido
+	y previsualizado en `subir_excel_y_previsualizar`. No vuelve a recibir
+	el archivo -- usa el mismo File guardado en el paso anterior.
+	"""
+	_require_import_role()
+
+	file_doc = frappe.get_doc("File", file_name)
+	full_path = file_doc.get_full_path()
+	if not os.path.isfile(full_path):
+		frappe.throw("El archivo subido ya no esta disponible, vuelva a subirlo.")
+
+	resultado = importar_articulos_excel(
+		file_doc.file_name or file_name,
+		sheet_name=sheet_name,
+		dry_run=False,
+		full_path=full_path,
+	)
+
+	# El File temporal ya cumplio su proposito (se confirmo la importacion):
+	# se borra para no acumular adjuntos huerfanos en el sistema.
+	frappe.delete_doc("File", file_name, ignore_permissions=True, delete_permanently=True)
+	frappe.db.commit()
+	return resultado
 
 
 UBICACIONES_MAESTRO_FILENAME = "UBICACIONES.xlsx"

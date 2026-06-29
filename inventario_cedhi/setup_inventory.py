@@ -2410,14 +2410,20 @@ window.open_quick_reasignar_dialog = function(opts) {
 frappe.ui.form.on('Movimiento de Inventario', {
     scan_barcode: function(frm) {
         if(frm.doc.scan_barcode) {
-            frappe.db.get_value('Articulo de Inventario', {codigo_barras: frm.doc.scan_barcode}, 'name')
-            .then(r => {
-                if(r && r.message && r.message.name) {
-                    frm.set_value('articulo', r.message.name);
-                    frm.set_value('scan_barcode', ''); // clear input for next scan
-                    frappe.show_alert({message: __('Artículo escaneado correctamente'), indicator: 'green'});
-                } else {
-                    frappe.msgprint({title: __('Error de Escaneo'), message: __('No se encontró ningún artículo con el código de barras: ') + frm.doc.scan_barcode, indicator: 'red'});
+            // Busca por codigo_barras primero y, si no hay match, por
+            // codigo_interno (el que SI imprime la etiqueta QR real --
+            // ver buscar_articulo_por_codigo en inventory_logic.py).
+            frappe.call({
+                method: 'inventario_cedhi.inventory_logic.buscar_articulo_por_codigo',
+                args: { codigo: frm.doc.scan_barcode },
+                callback: function(r) {
+                    if (r.message && r.message.name) {
+                        frm.set_value('articulo', r.message.name);
+                        frm.set_value('scan_barcode', ''); // clear input for next scan
+                        frappe.show_alert({message: __('Artículo escaneado correctamente'), indicator: 'green'});
+                    }
+                },
+                error: function() {
                     frm.set_value('scan_barcode', '');
                 }
             });
@@ -2672,7 +2678,7 @@ def create_inventory_print_formats():
     <div class="label-header">INSTITUTO CEDHI</div>
     <div class="label-title">{{ doc.nombre_articulo }}</div>
     <div class="label-qr">
-        <img src="/api/method/frappe.utils.print_format.download_pdf?url={{ 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' ~ (doc.codigo_barras or doc.codigo_interno or doc.name) }}" style="width: 80px; height: 80px;" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ doc.codigo_barras or doc.codigo_interno or doc.name }}'"/>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ doc.codigo_barras or doc.codigo_interno or doc.name }}" style="width: 80px; height: 80px;"/>
     </div>
     <div class="label-code">{{ doc.codigo_interno or doc.name }}</div>
 </div>
@@ -2944,7 +2950,13 @@ def create_inventory_workspace():
 		{"label": "Kardex Digital", "link_to": "Movimiento de Inventario", "link_type": "DocType", "type": "Link"},
 		{"label": "Incidencias", "link_to": "Alerta de Inventario", "link_type": "DocType", "type": "Link"},
 	]
-	shortcuts = []
+	# Shortcut (no Link de card: Workspace Link no soporta type="URL", solo
+	# DocType/Page/Report -- Workspace Shortcut si). Visible a los 7 roles
+	# (no esta en la lista filtrada de mobile_navigation.js, que solo oculta
+	# shortcuts con label "CARGAR"/"EXPORTAR" del workspace Configuracion).
+	shortcuts = [
+		{"type": "URL", "url": "/consultar_articulo", "label": "CONSULTAR ARTICULO (QR)", "color": "Blue"},
+	]
 
 	roles = [
 		{"role": "System Manager"},
@@ -3075,6 +3087,7 @@ def create_child_workspaces():
 				{"type": "URL", "url": "/cargar_modulos", "label": "CARGAR MODULOS REALES", "color": "Blue"},
 				{"type": "URL", "url": "/api/method/inventario_cedhi.import_excel_articulos.exportar_ubicaciones_excel", "label": "EXPORTAR UBICACIONES", "color": "Green"},
 				{"type": "URL", "url": "/api/method/inventario_cedhi.import_excel_articulos.exportar_modulos_excel", "label": "EXPORTAR MODULOS", "color": "Green"},
+				{"type": "URL", "url": "/importar_articulos", "label": "CARGAR CATALOGO EXCEL", "color": "Blue"},
 			],
 		}
 	]

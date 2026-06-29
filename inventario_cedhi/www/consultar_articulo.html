@@ -1,0 +1,124 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Consultar articulo - CEDHI{% endblock %}
+
+{% block page_content %}
+<div class="container" style="max-width: 480px; margin: 24px auto;">
+	<h2>Consultar articulo</h2>
+	<p class="text-muted">
+		Escanea el codigo QR de la etiqueta o pega el codigo manualmente.
+	</p>
+
+	<div class="form-group">
+		<input type="text" id="codigo-input" class="form-control" placeholder="Codigo del articulo" autofocus>
+	</div>
+	<button id="btn-buscar" class="btn btn-primary">Buscar</button>
+	<button id="btn-camara" class="btn btn-secondary" type="button">Usar camara</button>
+
+	<div id="lector-qr" style="margin-top: 16px; display: none;"></div>
+
+	<div id="mensaje" style="margin-top: 16px;"></div>
+	<div id="ficha" style="margin-top: 16px; display: none;">
+		<div class="card">
+			<div class="card-body">
+				<h4 id="ficha-nombre" class="card-title"></h4>
+				<table class="table table-sm" id="ficha-tabla">
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const LABELS = {
+	codigo_interno: "Codigo interno",
+	marca: "Marca",
+	modelo: "Modelo",
+	modulo: "Modulo",
+	ubicacion: "Ubicacion",
+	estado: "Estado",
+	cantidad: "Cantidad",
+	stock_actual: "Stock actual",
+	stock_critico: "Stock critico",
+	unidad_medida: "Unidad de medida",
+	fecha_vencimiento: "Fecha de vencimiento",
+	proveedor_referencia: "Proveedor de referencia",
+};
+
+function mostrar_mensaje(texto, tipo) {
+	const el = document.getElementById("mensaje");
+	el.innerHTML = texto ? `<div class="alert alert-${tipo}">${texto}</div>` : "";
+}
+
+function mostrar_ficha(data) {
+	document.getElementById("ficha-nombre").textContent = data.nombre_articulo || data.name;
+	const tbody = document.querySelector("#ficha-tabla tbody");
+	tbody.innerHTML = "";
+	for (const key of Object.keys(LABELS)) {
+		if (!(key in data) || !data[key]) continue;
+		const tr = document.createElement("tr");
+		tr.innerHTML = `<th>${LABELS[key]}</th><td>${data[key]}</td>`;
+		tbody.appendChild(tr);
+	}
+	document.getElementById("ficha").style.display = "block";
+}
+
+function buscar_codigo(codigo) {
+	codigo = (codigo || "").trim();
+	if (!codigo) return;
+	mostrar_mensaje("Buscando...", "info");
+	document.getElementById("ficha").style.display = "none";
+
+	frappe.call({
+		method: "inventario_cedhi.inventory_logic.buscar_articulo_por_codigo",
+		args: { codigo: codigo },
+		callback: function(r) {
+			if (r.message) {
+				mostrar_mensaje("", "");
+				mostrar_ficha(r.message);
+			}
+		},
+		error: function(r) {
+			const msg = (r && r._server_messages) ? "No se encontro el articulo o no tiene permiso para verlo." : "Error al buscar el articulo.";
+			mostrar_mensaje(msg, "danger");
+		}
+	});
+}
+
+document.getElementById("btn-buscar").addEventListener("click", function() {
+	buscar_codigo(document.getElementById("codigo-input").value);
+});
+
+document.getElementById("codigo-input").addEventListener("keydown", function(e) {
+	if (e.key === "Enter") {
+		e.preventDefault();
+		buscar_codigo(this.value);
+	}
+});
+
+let qr_scanner = null;
+document.getElementById("btn-camara").addEventListener("click", function() {
+	const contenedor = document.getElementById("lector-qr");
+	if (contenedor.style.display === "none") {
+		contenedor.style.display = "block";
+		qr_scanner = new Html5Qrcode("lector-qr");
+		qr_scanner.start(
+			{ facingMode: "environment" },
+			{ fps: 10, qrbox: 200 },
+			function(decodedText) {
+				document.getElementById("codigo-input").value = decodedText;
+				buscar_codigo(decodedText);
+			}
+		).catch(function() {
+			mostrar_mensaje("No se pudo acceder a la camara. Pegue el codigo manualmente.", "warning");
+			contenedor.style.display = "none";
+		});
+	} else {
+		if (qr_scanner) { qr_scanner.stop(); }
+		contenedor.style.display = "none";
+	}
+});
+</script>
+{% endblock %}

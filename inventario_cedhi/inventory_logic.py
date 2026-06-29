@@ -274,6 +274,67 @@ def enforce_default_workspace(doc, method=None):
         doc.default_workspace = "Inventario CEDHI"
 
 
+@frappe.whitelist()
+def buscar_articulo_por_codigo(codigo):
+    """Busca un Articulo de Inventario por codigo escaneado (QR/barcode).
+
+    Orden de busqueda: `codigo_barras` exacto primero (campo manual, casi
+    nunca lleno hoy) -> `codigo_interno` exacto (el que SI imprime la
+    etiqueta QR como fallback, ver create_inventory_print_formats en
+    setup_inventory.py) -> `name` (hash interno, por si se escanea/pega
+    ese valor directo). Sin esto, escanear una etiqueta real (que imprime
+    codigo_interno) nunca encontraba nada porque el unico lookup que
+    existia antes buscaba solo por codigo_barras.
+
+    Aplica permisos reales del modulo del articulo (no solo si esta
+    logueado): un Admin TI que escanea un articulo de Gastronomia debe ver
+    error de permiso, no los datos. Usado tanto por la pagina de consulta
+    (www/consultar_articulo) como, en el futuro, por el Client Script de
+    escaneo en Movimiento de Inventario.
+    """
+    from inventario_cedhi.permissions import article_has_permission
+
+    codigo = (codigo or "").strip()
+    if not codigo:
+        frappe.throw(_("Ingrese o escanee un codigo."))
+
+    name = frappe.db.get_value("Articulo de Inventario", {"codigo_barras": codigo})
+    if not name:
+        name = frappe.db.get_value("Articulo de Inventario", {"codigo_interno": codigo})
+    if not name:
+        name = frappe.db.get_value("Articulo de Inventario", {"name": codigo})
+    if not name:
+        frappe.throw(_("No se encontro ningun articulo con el codigo '{0}'.").format(codigo))
+
+    doc = frappe.get_doc("Articulo de Inventario", name)
+    if not article_has_permission(doc, "read"):
+        frappe.throw(_("No tiene permiso para ver este articulo."), frappe.PermissionError)
+
+    data = {
+        "name": doc.name,
+        "nombre_articulo": doc.nombre_articulo,
+        "codigo_interno": doc.codigo_interno,
+        "codigo_barras": doc.codigo_barras,
+        "marca": doc.marca,
+        "modelo": doc.modelo,
+        "modulo": doc.modulo,
+        "ubicacion": doc.ubicacion,
+        "estado": doc.estado,
+        "cantidad": doc.cantidad,
+        "fotografia": doc.fotografia,
+        "es_perecible": doc.es_perecible,
+    }
+    if doc.es_perecible == "Si":
+        data.update({
+            "stock_actual": doc.stock_actual,
+            "stock_critico": doc.stock_critico,
+            "unidad_medida": doc.unidad_medida,
+            "fecha_vencimiento": doc.fecha_vencimiento,
+            "proveedor_referencia": doc.proveedor_referencia,
+        })
+    return data
+
+
 
 
 
