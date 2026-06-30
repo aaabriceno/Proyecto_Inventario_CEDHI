@@ -39,6 +39,109 @@
 				<p class="text-muted"><strong>Ya existian:</strong> {{ resultado.saltados|join(", ") }}</p>
 			{% endif %}
 		{% endif %}
+
+		<hr style="margin: 32px 0;">
+
+		<h3>Subir un archivo nuevo</h3>
+		<p class="text-muted">
+			Si tiene una lista de modulos distinta a la del repo, subala
+			aqui. Primero se muestra un preview (sin tocar la base de datos),
+			recien al confirmar se importa de verdad.
+		</p>
+
+		<div class="form-group">
+			<input type="file" id="archivo-input" accept=".xlsx" class="form-control">
+		</div>
+		<button id="btn-preview" class="btn btn-primary">Ver preview</button>
+
+		<div id="mensaje" style="margin-top: 16px;"></div>
+		<div id="preview-resumen" style="display: none; margin-top: 16px;"></div>
+		<div id="preview-acciones" style="display: none; margin-top: 16px;">
+			<button id="btn-confirmar" class="btn btn-success">Confirmar importacion</button>
+			<button id="btn-cancelar" class="btn btn-secondary">Cancelar / elegir otro archivo</button>
+		</div>
 	{% endif %}
 </div>
+
+<script>
+let file_name_temp = null;
+
+function mostrar_mensaje(texto, tipo) {
+	const el = document.getElementById("mensaje");
+	el.innerHTML = texto ? `<div class="alert alert-${tipo}">${texto}</div>` : "";
+}
+
+function limpiar_preview() {
+	document.getElementById("preview-resumen").style.display = "none";
+	document.getElementById("preview-acciones").style.display = "none";
+	file_name_temp = null;
+}
+
+function mostrar_preview(data) {
+	const resumen = document.getElementById("preview-resumen");
+	resumen.innerHTML = `
+		<div class="alert alert-info">
+			<strong>${data.creados.length}</strong> modulos se crearian,
+			<strong>${data.saltados.length}</strong> ya existian (se omiten).
+		</div>`;
+	resumen.style.display = "block";
+
+	file_name_temp = data.file_name;
+	document.getElementById("preview-acciones").style.display = "block";
+}
+
+document.getElementById("btn-preview").addEventListener("click", function() {
+	const input = document.getElementById("archivo-input");
+	if (!input.files.length) {
+		mostrar_mensaje("Seleccione un archivo .xlsx primero.", "warning");
+		return;
+	}
+	limpiar_preview();
+	mostrar_mensaje("Subiendo y analizando archivo...", "info");
+
+	const formData = new FormData();
+	formData.append("file", input.files[0]);
+
+	fetch("/api/method/inventario_cedhi.import_excel_articulos.subir_modulos_y_previsualizar", {
+		method: "POST",
+		headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
+		body: formData,
+	})
+	.then(function(resp) {
+		if (!resp.ok) { throw new Error("error"); }
+		return resp.json();
+	})
+	.then(function(json) {
+		mostrar_mensaje("", "");
+		mostrar_preview(json.message);
+	})
+	.catch(function() {
+		mostrar_mensaje("No se pudo procesar el archivo. Verifique que sea un .xlsx valido (1 columna Nombre Modulo).", "danger");
+	});
+});
+
+document.getElementById("btn-confirmar").addEventListener("click", function() {
+	if (!file_name_temp) return;
+	mostrar_mensaje("Importando...", "info");
+
+	frappe.call({
+		method: "inventario_cedhi.import_excel_articulos.confirmar_importacion_modulos_endpoint",
+		args: { file_name: file_name_temp },
+		callback: function(r) {
+			mostrar_mensaje(`Importacion completada: ${r.message.creados.length} modulos creados.`, "success");
+			limpiar_preview();
+			document.getElementById("archivo-input").value = "";
+		},
+		error: function() {
+			mostrar_mensaje("Error al confirmar la importacion.", "danger");
+		}
+	});
+});
+
+document.getElementById("btn-cancelar").addEventListener("click", function() {
+	limpiar_preview();
+	mostrar_mensaje("", "");
+	document.getElementById("archivo-input").value = "";
+});
+</script>
 {% endblock %}

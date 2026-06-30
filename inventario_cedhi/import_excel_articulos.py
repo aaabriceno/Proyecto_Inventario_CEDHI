@@ -335,7 +335,7 @@ def confirmar_importacion_excel_endpoint(file_name, sheet_name=None):
 UBICACIONES_MAESTRO_FILENAME = "UBICACIONES.xlsx"
 
 
-def importar_ubicaciones_reales():
+def importar_ubicaciones_reales(full_path=None, dry_run=False):
 	"""Crea (idempotente) las Ubicaciones reales del CEDHI a partir de la
 	lista maestra `datos_iniciales/UBICACIONES.xlsx` (1 columna "Nombre
 	Ubicacion", 1 fila por ubicacion).
@@ -351,9 +351,16 @@ def importar_ubicaciones_reales():
 	El modulo queda vacio: el CEDHI aun no ha definido a que modulo
 	pertenece cada ubicacion (ej. Direccion no pertenece a ningun modulo),
 	asi que no se fuerza un valor.
+
+	`full_path`/`dry_run`: igual patron que `importar_articulos_excel` --
+	permite subir un archivo nuevo desde el navegador
+	(subir_ubicaciones_y_previsualizar) y previsualizar antes de tocar la BD.
 	"""
-	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
-	path = os.path.join(app_path, DATOS_INICIALES_DIR, UBICACIONES_MAESTRO_FILENAME)
+	if full_path:
+		path = full_path
+	else:
+		app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+		path = os.path.join(app_path, DATOS_INICIALES_DIR, UBICACIONES_MAESTRO_FILENAME)
 	if not os.path.isfile(path):
 		frappe.throw(f"No se encontro el archivo maestro de ubicaciones: {path}")
 
@@ -369,6 +376,9 @@ def importar_ubicaciones_reales():
 		if frappe.db.exists("Ubicacion", {"nombre_ubicacion": nombre}):
 			saltadas.append(nombre)
 			continue
+		if dry_run:
+			creadas.append(nombre)
+			continue
 		doc = frappe.get_doc({
 			"doctype": "Ubicacion",
 			"nombre_ubicacion": nombre,
@@ -377,7 +387,8 @@ def importar_ubicaciones_reales():
 		doc.insert(ignore_permissions=True)
 		creadas.append(nombre)
 
-	frappe.db.commit()
+	if not dry_run:
+		frappe.db.commit()
 	return {"creadas": creadas, "saltadas": saltadas}
 
 
@@ -389,16 +400,57 @@ def importar_ubicaciones_reales_endpoint():
 	importacion de articulos. Es rapido (~30 registros): no necesita
 	encolarse en background.
 	"""
-	roles = set(frappe.get_roles())
-	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
-		frappe.throw("No tiene permiso para importar las ubicaciones reales.")
+	_require_import_role()
 	return importar_ubicaciones_reales()
+
+
+@frappe.whitelist()
+def subir_ubicaciones_y_previsualizar():
+	"""Sube un .xlsx nuevo de ubicaciones desde el navegador y devuelve un
+	preview (dry_run) sin tocar la BD -- mismo patron de 2 pasos que
+	`subir_excel_y_previsualizar` (articulos).
+	"""
+	_require_import_role()
+
+	if "file" not in frappe.request.files:
+		frappe.throw("No se recibio ningun archivo.")
+	upload = frappe.request.files["file"]
+	if not upload.filename.lower().endswith(".xlsx"):
+		frappe.throw("Solo se aceptan archivos .xlsx.")
+
+	from frappe.utils.file_manager import save_file
+
+	content = upload.stream.read()
+	file_doc = save_file(upload.filename, content, None, None, is_private=1)
+
+	resultado = importar_ubicaciones_reales(full_path=file_doc.get_full_path(), dry_run=True)
+	resultado["file_name"] = file_doc.name
+	return resultado
+
+
+@frappe.whitelist()
+def confirmar_importacion_ubicaciones_endpoint(file_name):
+	"""Confirma la importacion real de Ubicaciones sobre el File ya subido
+	y previsualizado en `subir_ubicaciones_y_previsualizar`.
+	"""
+	_require_import_role()
+
+	file_doc = frappe.get_doc("File", file_name)
+	full_path = file_doc.get_full_path()
+	if not os.path.isfile(full_path):
+		frappe.throw("El archivo subido ya no esta disponible, vuelva a subirlo.")
+
+	resultado = importar_ubicaciones_reales(full_path=full_path, dry_run=False)
+
+	frappe.delete_doc("File", file_name, ignore_permissions=True, delete_permanently=True)
+	frappe.db.commit()
+	return resultado
 
 
 MODULOS_MAESTRO_FILENAME = "MODULOS.xlsx"
 
 
-def importar_modulos_reales():
+def importar_modulos_reales(full_path=None, dry_run=False):
 	"""Crea (idempotente) los Modulo reales del CEDHI a partir de la lista
 	maestra `datos_iniciales/MODULOS.xlsx` (1 columna "Nombre Modulo", 1 fila
 	por modulo) -- mismo patron que `importar_ubicaciones_reales`.
@@ -406,9 +458,16 @@ def importar_modulos_reales():
 	Insertar un Modulo dispara `Modulo.before_insert` (ver modulo.py), que
 	autogenera el Role "Admin {nombre}" y sus permisos base -- no hace falta
 	nada mas aqui.
+
+	`full_path`/`dry_run`: igual patron que `importar_articulos_excel` --
+	permite subir un archivo nuevo desde el navegador
+	(subir_modulos_y_previsualizar) y previsualizar antes de tocar la BD.
 	"""
-	app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
-	path = os.path.join(app_path, DATOS_INICIALES_DIR, MODULOS_MAESTRO_FILENAME)
+	if full_path:
+		path = full_path
+	else:
+		app_path = os.path.dirname(frappe.get_app_path("inventario_cedhi"))
+		path = os.path.join(app_path, DATOS_INICIALES_DIR, MODULOS_MAESTRO_FILENAME)
 	if not os.path.isfile(path):
 		frappe.throw(f"No se encontro el archivo maestro de modulos: {path}")
 
@@ -424,6 +483,9 @@ def importar_modulos_reales():
 		if frappe.db.exists("Modulo", nombre):
 			saltados.append(nombre)
 			continue
+		if dry_run:
+			creados.append(nombre)
+			continue
 		doc = frappe.get_doc({
 			"doctype": "Modulo",
 			"nombre_modulo": nombre,
@@ -432,7 +494,8 @@ def importar_modulos_reales():
 		doc.insert(ignore_permissions=True)
 		creados.append(nombre)
 
-	frappe.db.commit()
+	if not dry_run:
+		frappe.db.commit()
 	return {"creados": creados, "saltados": saltados}
 
 
@@ -444,10 +507,51 @@ def importar_modulos_reales_endpoint():
 	resto de importadores -- crear un Modulo ya esta restringido a esos roles
 	en modulo.json, esto solo agrega el flujo masivo via Excel.
 	"""
-	roles = set(frappe.get_roles())
-	if not roles & {"System Manager", "SuperAdministrador Inventario", "Administrator"}:
-		frappe.throw("No tiene permiso para importar los modulos reales.")
+	_require_import_role()
 	return importar_modulos_reales()
+
+
+@frappe.whitelist()
+def subir_modulos_y_previsualizar():
+	"""Sube un .xlsx nuevo de modulos desde el navegador y devuelve un
+	preview (dry_run) sin tocar la BD -- mismo patron de 2 pasos que
+	`subir_excel_y_previsualizar` (articulos).
+	"""
+	_require_import_role()
+
+	if "file" not in frappe.request.files:
+		frappe.throw("No se recibio ningun archivo.")
+	upload = frappe.request.files["file"]
+	if not upload.filename.lower().endswith(".xlsx"):
+		frappe.throw("Solo se aceptan archivos .xlsx.")
+
+	from frappe.utils.file_manager import save_file
+
+	content = upload.stream.read()
+	file_doc = save_file(upload.filename, content, None, None, is_private=1)
+
+	resultado = importar_modulos_reales(full_path=file_doc.get_full_path(), dry_run=True)
+	resultado["file_name"] = file_doc.name
+	return resultado
+
+
+@frappe.whitelist()
+def confirmar_importacion_modulos_endpoint(file_name):
+	"""Confirma la importacion real de Modulos sobre el File ya subido y
+	previsualizado en `subir_modulos_y_previsualizar`.
+	"""
+	_require_import_role()
+
+	file_doc = frappe.get_doc("File", file_name)
+	full_path = file_doc.get_full_path()
+	if not os.path.isfile(full_path):
+		frappe.throw("El archivo subido ya no esta disponible, vuelva a subirlo.")
+
+	resultado = importar_modulos_reales(full_path=full_path, dry_run=False)
+
+	frappe.delete_doc("File", file_name, ignore_permissions=True, delete_permanently=True)
+	frappe.db.commit()
+	return resultado
 
 
 @frappe.whitelist()
