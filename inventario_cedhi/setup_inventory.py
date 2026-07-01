@@ -65,6 +65,7 @@ def setup_inventory_mvp():
 	results["Number Cards"] = create_inventory_number_cards()
 	results["Charts"] = create_inventory_charts()
 	results["Client Scripts"] = create_inventory_client_scripts()
+	results["Print Formats"] = create_inventory_print_formats()
 	results["Initial Users"] = create_initial_users()
 	results["Workspace"] = create_inventory_workspace()
 	results["Child Workspaces"] = create_child_workspaces()
@@ -2627,51 +2628,6 @@ def create_inventory_print_formats():
 		else:
 			doc = frappe.get_doc("Print Format", fmt["name"])
 			doc.html = fmt["html"]
-			doc.save(ignore_permissions=True)
-			results.append(doc.name)
-	return results
-
-def create_inventory_reports():
-	"""Create Query Reports for Inventory (Kardex)."""
-	reports = [
-		{
-			"name": "Kardex de Movimientos",
-			"report_name": "Kardex de Movimientos",
-			"ref_doctype": "Movimiento de Inventario",
-			"report_type": "Query Report",
-			"module": INVENTORY_MODULE,
-			"is_standard": "No",
-			"query": """
-SELECT
-    name as "ID Movimiento:Link/Movimiento de Inventario:150",
-    fecha_movimiento as "Fecha:Date:120",
-    tipo_movimiento as "Tipo:Data:120",
-    articulo as "Artículo:Link/Articulo de Inventario:200",
-    cantidad as "Cantidad:Int:100",
-    responsable as "Responsable:Data:180",
-    observaciones as "Observaciones:Data:250"
-FROM
-    `tabMovimiento de Inventario`
-WHERE
-    docstatus < 2
-ORDER BY
-    fecha_movimiento DESC
-"""
-		}
-	]
-
-	results = []
-	for rep in reports:
-		if not frappe.db.exists("Report", rep["name"]):
-			doc = frappe.get_doc({
-				"doctype": "Report",
-				**rep
-			})
-			doc.insert(ignore_permissions=True)
-			results.append(doc.name)
-		else:
-			doc = frappe.get_doc("Report", rep["name"])
-			doc.query = rep["query"]
 			doc.save(ignore_permissions=True)
 			results.append(doc.name)
 	return results
