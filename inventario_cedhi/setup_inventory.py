@@ -2968,7 +2968,7 @@ def hide_unwanted_workspaces():
 	allowed_workspaces = [
 		"Inventario CEDHI", "Operaciones", "Reportes", "Configuración",
 		# Core Frappe Workspaces (needed for Administrator)
-		"Users", "Settings", "Build", "Integrations", "Tools", "Website", "Home", "Core", "Customization"
+		"Users", "Settings", "Build", "Integrations", "Tools", "Website", "Core", "Customization"
 	]
 
 	# Show allowed workspaces
