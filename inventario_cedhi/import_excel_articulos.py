@@ -173,6 +173,11 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path
 	# Detectar columnas por nombre de header (robusto ante columnas desplazadas).
 	# Si la deteccion falla, usar las constantes por defecto.
 	detected = _detect_columns(ws)
+	frappe.log_error(
+		f"_detect_columns resultado: {detected}\n"
+		f"Header fila 11: { {c: ws.cell(row=HEADER_ROW, column=c).value for c in range(1, min(ws.max_column+1, 30))} }",
+		"ImportarArticulos debug"
+	)
 	col_cantidad          = detected.get("COL_CANTIDAD", COL_CANTIDAD) if detected else COL_CANTIDAD
 	col_descripcion       = detected.get("COL_DESCRIPCION", COL_DESCRIPCION) if detected else COL_DESCRIPCION
 	col_id_unico          = detected.get("COL_IDENTIFICADOR_UNICO", COL_IDENTIFICADOR_UNICO) if detected else COL_IDENTIFICADOR_UNICO
