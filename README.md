@@ -1,476 +1,263 @@
 # Sistema de Inventario CEDHI Nueva Arequipa
 
-Aplicacion Frappe/ERPNext para gestionar el inventario del CEDHI Nueva Arequipa. El MVP organiza articulos por modulo:
+Sistema de gestion de inventario para el CEDHI Nueva Arequipa, construido sobre Frappe/ERPNext v15.
 
-- TI
-- Gastronomia
-- General
+---
 
-El proyecto incluye carga inicial desde Excel/CSV, roles del PRD, permisos por modulo, reportes iniciales y un workspace de trabajo dentro de Frappe.
+## Instalacion en Windows (para el CEDHI)
 
-## Que se sube a este repo
+Esta es la forma recomendada. No requiere instalar Python, Node, MariaDB ni nada tecnico manualmente. Solo necesitas Docker Desktop.
 
-Este repositorio contiene solo la app custom:
+### Requisitos previos
 
-```text
-apps/inventario_cedhi
+**1. Docker Desktop**
+
+Descargalo e instalalo desde:
+```
+https://www.docker.com/products/docker-desktop/
 ```
 
-No se debe subir todo `my-bench`. Las carpetas `env`, `sites`, `logs`, `config`, `apps/frappe` y `apps/erpnext` son parte de la instalacion local o dependencias externas.
+Durante la instalacion, acepta todas las opciones por defecto. Cuando termine, reinicia Windows si te lo pide.
 
-## Que NO viene incluido al clonar
+Verifica que Docker este corriendo: debe aparecer el icono de la ballena en la barra de tareas (abajo a la derecha). Si no aparece, abre Docker Desktop manualmente desde el menu Inicio.
 
-Al clonar este repositorio no se obtiene la base de datos local de Anthony ni el contenido ya cargado en su sitio `inventario.local`.
+**2. Git para Windows** (solo para la instalacion inicial)
 
-Este repo SI incluye:
-
-- Codigo de la app `inventario_cedhi`.
-- Scripts para crear/configurar campos, roles, permisos, reportes y workspace.
-- Excel originales y CSV preparados para importacion.
-- Documentacion del proyecto.
-
-Este repo NO incluye:
-
-- Usuarios creados en la maquina de Anthony.
-- Contrasenas.
-- Sesiones iniciadas.
-- Articulos ya importados dentro de MariaDB.
-- Archivos cargados en `sites/inventario.local/private/files`.
-- Backups o configuracion local de `sites`.
-
-Cada integrante debe crear su propio sitio local, instalar la app, ejecutar los scripts de configuracion y luego importar los CSV.
-
-## Requisitos
-
-- Frappe Bench instalado
-- ERPNext instalado en el bench
-- Python, Node, Redis y MariaDB configurados segun la guia oficial de Frappe/ERPNext
-
-## Instalacion en un bench existente
-
-Desde la carpeta del bench:
-
-```bash
-cd ~/frappe/my-bench
-bench get-app https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git --branch develop
-bench --site inventario.local install-app inventario_cedhi
+Descargalo desde:
+```
+https://git-scm.com/download/win
 ```
 
-Si el sitio todavia no existe, primero crear e instalar ERPNext:
+Instala con todas las opciones por defecto. Esto te permite descargar el proyecto y actualizarlo despues.
 
-```bash
-bench new-site inventario.local
-bench --site inventario.local install-app erpnext
-bench --site inventario.local install-app inventario_cedhi
-```
+---
 
-## Instalacion con Docker en Windows + WSL
+### Paso 1 — Descargar el proyecto
 
-Esta opcion es la recomendada para integrantes que usan Windows o macOS y no quieren instalar manualmente Python, Node, Redis, MariaDB, Bench, Frappe y ERPNext.
+Abre una ventana de **Simbolo del sistema** (cmd) o **PowerShell** y ejecuta:
 
-### Requisitos
-
-En Windows:
-
-- Docker Desktop instalado.
-- WSL2 habilitado.
-- Una distribucion Linux en WSL, por ejemplo Ubuntu.
-
-En WSL/Ubuntu:
-
-- Git instalado.
-- Acceso al repositorio del proyecto.
-
-No descargar el proyecto como ZIP. Se recomienda clonar con Git dentro de WSL para poder usar `git pull`, ramas y commits correctamente.
-
-### 1. Clonar el repositorio dentro de WSL
-
-Abrir Ubuntu/WSL y ejecutar:
-
-```bash
-mkdir -p ~/proyectos
-cd ~/proyectos
+```cmd
+cd %USERPROFILE%
 git clone -b develop https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git
-cd Proyecto_Inventario_CEDHI
+cd Proyecto_Inventario_CEDHI\docker_setup
 ```
 
-Si se usa SSH:
+Esto descarga todo el proyecto en la carpeta `C:\Users\TuUsuario\Proyecto_Inventario_CEDHI\`.
 
-```bash
-git clone -b develop git@github.com:aaabriceno/Proyecto_Inventario_CEDHI.git
-cd Proyecto_Inventario_CEDHI
+---
+
+### Paso 2 — Crear el archivo de configuracion
+
+Dentro de la carpeta `docker_setup`, copia el archivo de ejemplo:
+
+```cmd
+copy .env.example .env
 ```
 
-### 2. Preparar variables locales de Docker
+El archivo `.env` tiene la configuracion basica lista para usar. No necesitas cambiar nada para una instalacion estandar.
 
-Entrar a la carpeta Docker y crear el `.env` local:
+> **Nota:** Si quieres cambiar la contrasena del administrador, abre `.env` con el Bloc de notas y cambia el valor de `ADMIN_PASSWORD`. Por defecto es `admin`.
 
-```bash
-cd ./docker_setup/
-cp .env.example .env
+---
+
+### Paso 3 — Crear los accesos directos en el escritorio
+
+Haz clic derecho en el archivo `crear_accesos_directos.ps1` (dentro de `docker_setup\windows\`) y selecciona **"Ejecutar con PowerShell"**.
+
+Si Windows pregunta si deseas permitir la ejecucion, acepta.
+
+Esto crea tres iconos en tu escritorio:
+- **Iniciar Sistema CEDHI** — para el uso diario
+- **Inventario CEDHI** — abre el sistema en el navegador
+- **Actualizar Sistema CEDHI** — para cuando haya una version nueva
+
+---
+
+### Paso 4 — Primera instalacion (solo la primera vez)
+
+Haz doble clic en **"Iniciar Sistema CEDHI"** en el escritorio.
+
+La primera vez, Docker descarga e instala todo automaticamente (Frappe, ERPNext, la app del CEDHI, la base de datos). Esto puede tardar **entre 10 y 30 minutos** segun la velocidad de internet. Es normal que la ventana muestre muchos mensajes de texto durante este proceso.
+
+Cuando el proceso termine, el sistema abrira el navegador automaticamente en:
+```
+http://inventario.localhost:8080
 ```
 
-El archivo `.env` no se sube a GitHub. Cada integrante tiene el suyo. Si se cambia `DB_PASSWORD`, se debe usar el mismo valor al crear el sitio.
+> **Si el navegador no abre solo:** espera 2 minutos mas y abre manualmente la direccion de arriba en tu navegador.
 
-### 3. Construir y levantar los contenedores
+---
 
-```bash
-docker compose up -d --build
+### Paso 5 — Primer ingreso al sistema
+
+En la pantalla de login:
+
+- **Usuario:** `Administrator`
+- **Contrasena:** `admin` (o la que pusiste en `ADMIN_PASSWORD` del `.env`)
+
+Al ingresar por primera vez, el sistema te mostrara el workspace de **Inventario CEDHI** con el menu principal.
+
+---
+
+### Uso diario
+
+Para encender el sistema cada dia:
+
+1. Haz doble clic en **"Iniciar Sistema CEDHI"** en el escritorio.
+2. Espera que aparezca el mensaje de que el sistema esta listo (tarda unos 30-60 segundos).
+3. El navegador abre automaticamente en `http://inventario.localhost:8080`.
+4. Inicia sesion con tu usuario y contrasena.
+
+Para apagar el sistema al final del dia, simplemente cierra la ventana del comando o deja Docker Desktop corriendo (no consume recursos importantes cuando no lo estan usando).
+
+---
+
+### Acceso desde otras computadoras de la misma red
+
+Si la PC del CEDHI esta encendida con Docker corriendo, cualquier otra PC de la misma red wifi/cable puede entrar al sistema desde su navegador usando la **direccion IP** de la PC servidor.
+
+Para saber la IP de la PC servidor:
+1. Abre el Simbolo del sistema (cmd).
+2. Escribe `ipconfig` y presiona Enter.
+3. Busca el campo **"Direccion IPv4"** (ejemplo: `192.168.1.15`).
+
+Desde otra PC de la red, abre el navegador y entra a:
+```
+http://192.168.1.15:8080
+```
+(cambia `192.168.1.15` por la IP real que encontraste)
+
+> **Importante:** La IP puede cambiar si el router reasigna direcciones. Para que sea estable, configura una IP fija en Windows o una reserva DHCP en el router. Consulta con el administrador de red si esto ocurre.
+
+---
+
+### Actualizar el sistema cuando hay una version nueva
+
+Cuando el equipo de desarrollo suba mejoras al sistema:
+
+1. Haz doble clic en **"Actualizar Sistema CEDHI"** en el escritorio.
+2. Espera que el proceso termine (puede tardar 5-15 minutos).
+3. El sistema se reinicia con la version nueva sin perder los datos.
+
+> **Nunca cierres la ventana a la mitad** de una actualizacion. Si algo falla, contacta al equipo de soporte.
+
+---
+
+## Primeros pasos dentro del sistema
+
+### Crear usuarios
+
+1. Ve al workspace **Configuracion** (menu principal > Configuracion).
+2. Haz clic en **Usuarios**.
+3. Crea un nuevo usuario con correo y contrasena.
+4. Asignale un rol segun su funcion:
+
+| Rol | Para quien |
+|-----|-----------|
+| SuperAdministrador Inventario | El encargado principal del sistema |
+| Admin TI | Quien gestiona el inventario de TI |
+| Admin Cocina | Quien gestiona el inventario de Gastronomia |
+| Admin {Modulo} | Quien gestiona cualquier otro modulo |
+| Revisor | Quien solo consulta, sin poder editar |
+| Reportante | Quien solo reporta incidencias |
+
+### Crear modulos
+
+Si el CEDHI necesita un modulo nuevo (por ejemplo "Estilismo" o "Mobiliaria"):
+
+1. Ve a **Configuracion > Gestion de Modulos**.
+2. Crea un nuevo Modulo con el nombre.
+3. El sistema autogenera automaticamente el rol `Admin {nombre}` con todos los permisos necesarios.
+
+### Cargar ubicaciones
+
+Las ubicaciones son los espacios fisicos del CEDHI (aulas, almacenes, oficinas, etc.).
+
+**Opcion A — Subir un Excel** (recomendado para cargar muchas de una vez):
+1. Ve a **Configuracion > Cargar Ubicaciones**.
+2. En la seccion "Subir un archivo nuevo", selecciona tu archivo `.xlsx`.
+   - El archivo debe tener una sola columna llamada `Nombre Ubicacion`, una ubicacion por fila.
+3. Haz clic en **"Ver preview"** — el sistema te muestra cuantas ubicaciones se crearian sin tocar la base de datos.
+4. Si el preview es correcto, haz clic en **"Confirmar importacion"**.
+
+**Opcion B — Crear una por una**:
+1. Ve a **Configuracion > Espacios Fisicos**.
+2. Crea una nueva Ubicacion con el nombre.
+
+### Cargar articulos
+
+**Opcion A — Subir un Excel** (recomendado):
+1. Ve a **Configuracion > Cargar Catalogo Excel**.
+2. Selecciona tu archivo `.xlsx` con el formato de plantilla del CEDHI.
+3. Haz clic en **"Ver preview"** — muestra cuantos articulos se crearian y cuales tienen error (ubicacion o modulo no encontrado).
+4. Si el preview es correcto, confirma la importacion.
+
+> **Importante:** Las ubicaciones y modulos que aparezcan en el Excel deben existir previamente en el sistema. Si el preview muestra errores de "ubicacion no encontrada", primero carga esa ubicacion y vuelve a intentarlo.
+
+**Formato de la plantilla:**
+- Header en la fila 11.
+- Datos desde la fila 13.
+- Columnas principales: N° (A), CANT. (C), DESCRIPCION (E), MODELO (L), SERIE (M), MARCA (N), UBICACION (O), MODULO (R), ESTADO B/R/M (U/V/W).
+
+**Opcion B — Crear uno por uno**:
+1. Ve a **Operaciones > Catalogo de Inventario**.
+2. Crea un nuevo Articulo de Inventario llenando el formulario.
+
+### Consultar un articulo por QR o codigo
+
+Desde cualquier dispositivo (PC, celular, tablet) con el navegador:
+```
+http://<IP-del-servidor>:8080/consultar_articulo
 ```
 
-Esto levanta los servicios de Frappe/ERPNext, MariaDB, Redis, workers, scheduler, websocket y frontend.
+Puedes pegar el codigo manualmente o usar la camara del celular para escanear el codigo QR de la etiqueta impresa.
 
-### 4. Crear el sitio e instalar las apps
+### Registrar movimientos (Kardex)
 
-Crear el sitio:
+1. Ve a **Operaciones > Kardex de Movimientos**.
+2. Crea un nuevo Movimiento de Inventario.
+3. Elige el tipo:
+   - **Entrada**: suma cantidad al stock.
+   - **Salida**: resta cantidad al stock.
+   - **Ajuste**: fija el stock al valor exacto que indiques.
 
-```bash
-docker compose exec backend bench new-site inventario.localhost --mariadb-root-password admin --admin-password admin
-```
+---
 
-Instalar ERPNext:
+## Roles del sistema — resumen
 
-```bash
-docker compose exec backend bench --site inventario.localhost install-app erpnext
-```
+| Rol | Ve todo | Edita articulos | Carga masiva | Crea modulos/usuarios |
+|-----|---------|-----------------|--------------|----------------------|
+| SuperAdministrador | Si | Si (todos) | Si | Si |
+| Admin {Modulo} | Solo su modulo | Solo su modulo | No | No |
+| Revisor | Si | No (solo Kardex) | No | No |
+| Reportante | No | No | No | No |
 
-Instalar la app del proyecto:
+---
 
-```bash
-docker compose exec backend bench --site inventario.localhost install-app inventario_cedhi
-```
+## Solucionar problemas comunes
 
-Si cambiaste `DB_PASSWORD` en `.env`, usa ese mismo valor en `--mariadb-root-password`.
+**El navegador no abre el sistema:**
+- Verifica que Docker Desktop este corriendo (icono de ballena en la barra de tareas).
+- Espera 1-2 minutos mas y recarga la pagina.
+- Si el problema persiste, cierra y vuelve a ejecutar "Iniciar Sistema CEDHI".
 
-### 5. Ejecutar la configuracion inicial del MVP
+**No puedo iniciar sesion:**
+- Verifica que la contrasena sea correcta.
+- Si olvidaste la contrasena del Administrator, contacta al equipo de soporte.
 
-```bash
-docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
-```
+**El sistema va lento:**
+- Cierra otras aplicaciones que esten usando mucha memoria.
+- Reinicia Docker Desktop.
 
-Este comando crea/configura DocTypes, campos, roles, permisos, reportes, workspace y usuarios iniciales de prueba.
+**La IP del servidor cambio y otras PCs no pueden conectar:**
+- Confirma la IP actual con `ipconfig` en la PC servidor.
+- Actualiza la direccion en el navegador de las otras PCs.
+- Para evitar que cambie, configura IP fija o reserva DHCP en el router.
 
-### 6. Definir el sitio por defecto y limpiar cache
+---
 
-```bash
-docker compose exec backend bench use inventario.localhost
-docker compose exec backend bench --site inventario.localhost clear-cache
-```
+## Para desarrolladores
 
-### 7. Abrir el sistema
+Ver `docs/guia_inicio_proyecto.md` para arquitectura, modelo de datos, convenciones del repo y flujo de desarrollo.
 
-Desde el navegador de Windows o del sistema anfitrion:
-
-```text
-http://localhost:8080
-```
-
-### Actualizar cambios del proyecto dentro de Docker
-
-Cuando se suban cambios a `develop`, la forma mas segura de actualizar Docker es bajando los cambios en local y reconstruyendo la imagen:
-
-```bash
-cd ~/proyectos/Proyecto_Inventario_CEDHI
-git pull origin develop
-cd docker_setup
-docker compose up -d --build
-```
-
-Si necesitas descargar los últimos cambios de GitHub inmediatamente dentro del contenedor, sin esperar a reconstruir toda la imagen, ejecuta este comando:
-```bash
-docker compose exec backend bash -c "cd apps/inventario_cedhi && git fetch https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git develop && git reset --hard FETCH_HEAD"
-
-Si se crearon nuevas tablas, campos, reportes o cambios de modelo, sincronizar la base local:
-
-```bash
-docker compose exec backend bench --site inventario.localhost migrate
-docker compose exec backend bench --site inventario.localhost execute inventario_cedhi.setup_inventory.setup_inventory_mvp
-```
-
-Limpiar cache:
-
-```bash
-docker compose exec backend bench --site inventario.localhost clear-cache
-```
-
-### Trabajar en una rama propia
-
-Si un integrante va a programar cambios, debe crear una rama:
-
-```bash
-git checkout -b feature/nombre-del-cambio
-```
-
-Tambien puede entrar al contenedor si necesita revisar el bench:
-
-```bash
-docker compose exec -it backend bash
-cd apps/inventario_cedhi
-```
-
-Ejemplo de commit desde el repo local:
-
-```bash
-git add .
-git commit -m "Agregado modulo de reportes"
-git push origin mi-rama
-```
-
-## Configuracion inicial del MVP
-
-Ejecutar este comando desde la raiz del bench:
-
-```bash
-bench --site inventario.local execute inventario_cedhi.setup_inventory.setup_inventory_mvp
-bench --site inventario.local clear-cache
-```
-
-Si `bench start` estaba corriendo, reiniciarlo despues de cambios en `hooks.py`.
-
-Este comando crea primero los DocTypes base (`Ubicacion`, `Asignacion`, `Articulo de Inventario`) y despues configura campos, alertas, roles, permisos, reportes y workspace. Por eso es el comando recomendado para una instalacion nueva.
-
-Al terminar esta configuracion, el sitio tendra la estructura del MVP:
-
-- DocTypes y campos necesarios.
-- Roles y permisos del PRD.
-- Reportes iniciales.
-- Workspace `Inventario CEDHI`.
-
-Pero todavia no tendra los articulos cargados. Los articulos se cargan importando los CSV.
-
-## Datos iniciales
-
-Los Excel originales estan en:
-
-```text
-datos_iniciales/
-```
-
-Los CSV preparados para importar estan en:
-
-```text
-datos_iniciales/csv/
-```
-
-Archivos principales:
-
-- `import_articulos_gastronomia.csv`
-- `import_articulos_gastronomia_licores.csv`
-- `import_articulos_ti_sala_computo.csv`
-
-La importacion se realiza desde Frappe en:
-
-```text
-Importacion de Datos
-```
-
-Tipo de documento:
-
-```text
-Articulo de Inventario
-```
-
-Tipo de importacion:
-
-```text
-Insertando nuevos registros
-```
-
-No usar archivos dentro de `sites/inventario.local/private/files` como fuente del repo. Esos son archivos locales cargados en un sitio.
-
-### Carga de articulos
-
-Despues de ejecutar la configuracion inicial, importar los CSV desde Frappe:
-
-1. Abrir `Importacion de Datos`.
-2. Crear una nueva importacion.
-3. En `Tipo de Documento`, elegir `Articulo de Inventario`.
-4. En `Tipo de importacion`, elegir `Insertando nuevos registros`.
-5. Subir uno de los CSV de `datos_iniciales/csv/`.
-6. Revisar la vista previa.
-7. Iniciar importacion.
-
-Repetir el proceso para:
-
-- `datos_iniciales/csv/import_articulos_gastronomia.csv`
-- `datos_iniciales/csv/import_articulos_gastronomia_licores.csv`
-- `datos_iniciales/csv/import_articulos_ti_sala_computo.csv`
-
-Estos CSV son la fuente compartida del equipo. La importacion que ya existe en la maquina de Anthony no se copia automaticamente al clonar GitHub.
-
-## Roles del sistema
-
-Roles definidos para el MVP:
-
-- `SuperAdministrador Inventario`: acceso total al inventario y usuarios del proyecto.
-- `Admin TI`: gestiona solo articulos del modulo TI.
-- `Admin Cocina`: gestiona solo articulos del modulo Gastronomia.
-- `Admin General`: edita General y puede visualizar los otros modulos.
-- `Revisor`: solo lectura.
-- `Reportante`: crea alertas/incidencias y ve solo sus propios reportes.
-
-Las reglas por modulo estan en:
-
-```text
-inventario_cedhi/permissions.py
-```
-
-Los hooks de permisos estan en:
-
-```text
-inventario_cedhi/hooks.py
-```
-
-## Usuarios de prueba
-
-Los usuarios tambien viven en la base local de cada sitio. Por eso, al clonar el repo no apareceran automaticamente los usuarios de Anthony.
-
-Cada integrante puede crear usuarios de prueba desde Frappe y asignarles roles. Ejemplos:
-
-```text
-superadmin@cedhi.local    -> SuperAdministrador Inventario
-admin.ti@cedhi.local      -> Admin TI
-admin.cocina@cedhi.local  -> Admin Cocina
-admin.general@cedhi.local -> Admin General
-revisor@cedhi.local       -> Revisor
-profesor@cedhi.local      -> Reportante
-```
-
-Como los correos `@cedhi.local` no existen realmente, la contrasena temporal se puede establecer desde consola:
-
-```bash
-bench --site inventario.local execute frappe.utils.password.update_password --args '["usuario@cedhi.local", "Cedhi12345"]'
-```
-
-No guardar contrasenas reales en codigo ni en documentacion.
-
-## Autenticacion con Google (OAuth) en Desarrollo
-
-Para el MVP, el inicio de sesion con Google esta configurado en un entorno de pruebas en la cuenta de Google Cloud de un integrante del equipo.
-
-**IMPORTANTE:** Nunca subir el `Client ID` ni el `Client Secret` a GitHub. Estas credenciales deben compartirse por un canal privado (WhatsApp, Discord, etc.).
-
-Para que cualquier integrante pueda probar el inicio de sesion con Google en su entorno local (ya sea `http://localhost:8000`), debe seguir este flujo:
-
-1. **Solicitar acceso de prueba:** El integrante debe enviar su correo de Gmail real al administrador de la cuenta de Google Cloud del proyecto, para que este lo agregue a la lista de **Usuarios de prueba** en la *Pantalla de consentimiento de OAuth*. Si no esta en esta lista, Google mostrara un error de "Acceso bloqueado".
-2. **Obtener las claves:** Recibir por privado el `Client ID` y `Client Secret`.
-3. **Registrar el usuario localmente:** 
-   - Iniciar sesion en Frappe con un administrador local (ej. `superadmin@cedhi.local`).
-   - Ir a la lista de **Usuarios** y cambiar el correo del SuperAdministrador por el correo de Gmail real, o crear un usuario nuevo con ese Gmail.
-4. **Configurar el Social Login:**
-   - Buscar **Social Login Key** en la barra superior de Frappe y configurar el proveedor **Google**.
-   - Marcar **Enable Social Login**.
-   - Pegar el `Client ID` y `Client Secret`.
-   - Guardar (el sistema configurara automaticamente la URL base segun el puerto que esten usando).
-5. **Probar:** Cerrar sesion local y utilizar el boton de Google.
-
-## Reportes y workspace
-
-Workspace:
-
-```text
-Inventario CEDHI
-```
-
-Reportes iniciales:
-
-- `Resumen Inventario por Modulo`
-- `Stock Critico Gastronomia`
-- `Inventario TI por Ubicacion`
-- `Gastronomia sin Stock Critico`
-
-## Flujo de alertas
-
-Las alertas no nacen principalmente desde los administradores. El flujo esperado del MVP es:
-
-```text
-Profesor o usuario reportante
--> crea una Alerta de Inventario
--> el sistema toma modulo y ubicacion desde el articulo
--> Admin TI / Admin Cocina / Admin General revisa segun su modulo
--> SuperAdministrador Inventario puede ver todas las alertas
-```
-
-Permisos principales:
-
-- `Reportante`: puede crear alertas y ver sus propias alertas.
-- `Admin TI`: recibe y gestiona alertas del modulo TI.
-- `Admin Cocina`: recibe y gestiona alertas del modulo Gastronomia.
-- `Admin General`: recibe y gestiona alertas del modulo General.
-- `Revisor`: puede leer alertas, sin resolverlas.
-- `SuperAdministrador Inventario`: ve y gestiona todas.
-
-Al crear una alerta, el sistema completa automaticamente:
-
-- `Reportado por`
-- `Fecha de reporte`
-- `Modulo`
-- `Ubicacion`
-
-Los usuarios con rol `Reportante` deben tener configurado en su ficha de usuario:
-
-- `Modulo asignado`
-- `Ubicacion asignada`
-
-Esto permite representar PCs o usuarios de reporte ubicados en un laboratorio, cocina o ambiente especifico. Por ejemplo:
-
-```text
-profesor.lab01@cedhi.local
-Rol: Reportante
-Modulo asignado: TI
-Ubicacion asignada: Laboratorio 1
-```
-
-Con esa configuracion, el reportante solo puede seleccionar articulos de su ubicacion asignada al crear alertas.
-
-## Flujo de trabajo con Git
-
-La rama compartida principal del proyecto es:
-
-```bash
-develop
-```
-
-Antes de trabajar:
-
-```bash
-git checkout develop
-git pull
-```
-
-Crear una rama por tarea:
-
-```bash
-git checkout -b feature/nombre-de-la-tarea
-```
-
-Ejemplos:
-
-```text
-feature/dashboard-inventario
-feature/alertas-stock
-feature/reportes-gastronomia
-feature/documentacion-video
-```
-
-Al terminar:
-
-```bash
-git add .
-git commit -m "Descripcion breve del cambio"
-git push -u origin feature/nombre-de-la-tarea
-```
-
-Luego abrir un Pull Request hacia `develop`.
-
-## Documentacion del proyecto
-
-- `docs/guia_inicio_proyecto.md`
-- `docs/analisis_datos_iniciales.md`
-- `docs/arquitectura_base_datos.md`
-- `PRD_ Sistema de Inventario Integral1.pdf`
-- `Defincion MVP  Proyecto de Prácticas Sociales ABS 2026-01 (1).pdf`
-
-## Licencia
-
-MIT
+Repo: `https://github.com/aaabriceno/Proyecto_Inventario_CEDHI.git` — rama `develop`.
