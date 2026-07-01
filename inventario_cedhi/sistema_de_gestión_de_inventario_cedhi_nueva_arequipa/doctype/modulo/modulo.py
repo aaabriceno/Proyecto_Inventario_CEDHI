@@ -82,6 +82,28 @@ class Modulo(Document):
 			self._grant_module_role_permissions(role_name)
 		self.rol_admin = role_name
 
+	def after_insert(self):
+		"""Crea el filtro de lista 'Inventario {nombre}' para el modulo nuevo.
+
+		before_insert ya crea el Role y sus DocPerms. Aqui creamos el filtro
+		guardado en la lista de Articulo de Inventario para que el Admin del
+		modulo tenga de inmediato un acceso rapido a sus articulos, igual que
+		TI y Gastronomia tienen 'Inventario TI' / 'Inventario Gastronomia'.
+		"""
+		import json
+		doctype_name = "Articulo de Inventario"
+		filter_name = f"Inventario {self.nombre_modulo}"
+		if frappe.db.exists("List Filter", {"filter_name": filter_name, "reference_doctype": doctype_name}):
+			return
+		filters = [[doctype_name, "modulo", "=", self.nombre_modulo, False]]
+		frappe.get_doc({
+			"doctype": "List Filter",
+			"filter_name": filter_name,
+			"reference_doctype": doctype_name,
+			"filters": json.dumps(filters),
+		}).insert(ignore_permissions=True)
+		frappe.db.commit()
+
 	def _grant_module_role_permissions(self, role_name):
 		for doctype, perms in _MODULE_ROLE_PERMISSIONS.items():
 			if frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role_name}):
