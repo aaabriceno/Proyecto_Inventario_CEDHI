@@ -116,7 +116,6 @@ def ensure_inventory_module_def():
 
 _FRAPPE_CORE_ROLES = {
 	"Administrator", "System Manager", "All", "Guest", "Desk User",
-	"Website Manager", "Workspace Manager",
 }
 
 
