@@ -748,7 +748,6 @@ def configure_inventory_list_views():
 	saved_filters = {
 		"Inventario TI": [[doctype_name, "modulo", "=", "TI", False]],
 		"Inventario Gastronomia": [[doctype_name, "modulo", "=", "Gastronomia", False]],
-		"Inventario General": [[doctype_name, "modulo", "=", "General", False]],
 		"Licores": [
 			[doctype_name, "modulo", "=", "Gastronomia", False],
 			[doctype_name, "grupo", "=", "LICORES", False],
@@ -2438,7 +2437,7 @@ frappe.ui.form.on('Movimiento de Inventario', {
 			"script": """
 frappe.ui.form.on('Articulo de Inventario', {
     refresh: function(frm) {
-        // RF-TI-01: Brand/Model mandatory for TI
+        // RF-TI-01: Brand/Model mandatory for TI (unico modulo con equipos fisicos identificables)
         frm.toggle_reqd('marca', frm.doc.modulo === 'TI');
         frm.toggle_reqd('modelo', frm.doc.modulo === 'TI');
 
@@ -2457,11 +2456,11 @@ frappe.ui.form.on('Articulo de Inventario', {
             frm.set_df_property('codigo_interno', 'placeholder', '');
         }
 
-        // Personalidad: Color de fondo según módulo
-        if (frm.doc.modulo === 'TI') {
-            frm.set_df_property('datos_generales_section', 'label', '💻 Datos Técnicos TI');
-        } else if (frm.doc.modulo === 'Gastronomia') {
-            frm.set_df_property('datos_generales_section', 'label', '🍳 Control de Gastronomía');
+        // Etiqueta de seccion dinamica segun modulo
+        var iconos = {'TI': '💻', 'Gastronomia': '🍳', 'Mobiliaria': '🪑', 'Estilismo': '✂️'};
+        if (frm.doc.modulo) {
+            var icono = iconos[frm.doc.modulo] || '📦';
+            frm.set_df_property('datos_generales_section', 'label', icono + ' ' + frm.doc.modulo);
         }
 
         // RF-GA-01: Quick movement button on Form View.
@@ -2601,6 +2600,28 @@ frappe.listview_settings['Articulo de Inventario'].refresh = function(listview) 
 				},
 			]
 		)
+
+	scripts.append({
+		"dt": "User",
+		"view": "Form",
+		"name": "User - CEDHI Limpieza UI",
+		"script": """
+frappe.ui.form.on('User', {
+    refresh: function(frm) {
+        var roles = frappe.user_roles || [];
+        var isFullAdmin = roles.some(function(r) {
+            return ['System Manager', 'Administrator'].includes(r);
+        });
+        // Ocultar "Perfil de Rol" (feature de ERPNext no usado en CEDHI,
+        // confunde porque parece otra forma de asignar roles)
+        frm.toggle_display('role_profile_name', isFullAdmin);
+        // Ocultar seccion de modulos ERPNext (Almacen, Automatizacion, etc.)
+        // irrelevantes para el inventario CEDHI
+        frm.toggle_display('block_modules', isFullAdmin);
+    }
+});
+""",
+	})
 
 	# Delete redundant form script if exists to consolidate form logic
 	if frappe.db.exists("Client Script", "Articulo de Inventario - Navegacion movil"):

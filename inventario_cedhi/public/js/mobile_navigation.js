@@ -227,6 +227,41 @@ if (window.frappe && typeof frappe.after_ajax === "function") {
     frappe.after_ajax(cedhi_hide_restricted_shortcuts);
 }
 
+// Oculta botones del navbar que no aplican a usuarios CEDHI no-admin:
+// - Apps switcher (lleva a pantalla de apps de ERPNext, irrelevante)
+// - Help menu (documentacion de ERPNext, no del inventario)
+// - Settings gear (configuracion global de ERPNext, no del inventario)
+// SuperAdmin/System Manager los siguen viendo porque administran el sistema.
+function cedhi_hide_navbar_erpnext_buttons() {
+    var roles = (window.frappe && frappe.user_roles) || [];
+    var fullAccess = ['SuperAdministrador Inventario', 'System Manager', 'Administrator'];
+    if (roles.some(function(r) { return fullAccess.includes(r); })) return;
+
+    var selectors = [
+        '.navbar-home',           // Apps switcher (grid de apps)
+        '[data-toggle="dropdown"].navbar-icon-btn[href="#navbar-apps"]',
+        '.dropdown.navbar-apps',
+        '#navbar-apps',
+        '.dropdown-menu.apps-dropdown',
+        'a[href="/apps"]',
+        '.navbar-help',           // Help menu
+        '#navbar-help',
+        'a[title="Help"]',
+        '.navbar-settings',       // Settings gear
+        '#navbar-settings',
+        'a[href="/app/setup-wizard"]',
+    ];
+    selectors.forEach(function(sel) {
+        document.querySelectorAll(sel).forEach(function(el) {
+            el.style.setProperty('display', 'none', 'important');
+        });
+    });
+}
+
+if (window.frappe && typeof frappe.after_ajax === 'function') {
+    frappe.after_ajax(cedhi_hide_navbar_erpnext_buttons);
+}
+
 // Si un usuario cambia de sesion (logout/login) mientras el navegador todavia
 // tiene cargada una ruta a la que su rol no tiene acceso (ej. la pagina de
 // Usuarios abierta por el Superadmin), Frappe muestra "No tiene permiso para
