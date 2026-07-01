@@ -660,34 +660,6 @@ def ensure_initial_reference_data():
 	return result
 
 
-def mark_gastronomy_catalog_import_source():
-	"""Mark the imported gastronomy catalog records with their source file."""
-	names = frappe.get_all(
-		"Articulo de Inventario",
-		filters={
-			"fuente_datos": ["is", "not set"],
-			"modulo": "Gastronomia",
-			"codigo_interno": ["!=", "GAS-0001"],
-		},
-		pluck="name",
-		limit_page_length=2000,
-	)
-
-	for name in names:
-		frappe.db.set_value(
-			"Articulo de Inventario",
-			name,
-			{
-				"fuente_datos": "lista de insumos gastronomia.xlsx",
-				"hoja_origen": "INSUMOS",
-			},
-			update_modified=False,
-		)
-
-	frappe.db.commit()
-	return {"updated": len(names)}
-
-
 def configure_inventory_list_views():
 	"""Configure list columns, standard filters, and saved filters for inventory."""
 	doctype_name = "Articulo de Inventario"
@@ -1087,86 +1059,6 @@ order by grupo, nombre_articulo
 
 	frappe.db.commit()
 	return {"created": created, "updated": updated}
-
-
-def generate_stock_critical_alerts():
-	"""Create pending stock-low alerts for Gastronomia items under critical stock."""
-	items = frappe.get_all(
-		"Articulo de Inventario",
-		filters={
-			"modulo": "Gastronomia",
-			"stock_critico": [">", 0],
-		},
-		fields=[
-			"name",
-			"nombre_articulo",
-			"stock_actual",
-			"stock_critico",
-			"unidad_medida",
-			"ubicacion",
-		],
-		limit_page_length=5000,
-	)
-
-	created = []
-	for item in items:
-		if (item.stock_actual or 0) >= (item.stock_critico or 0):
-			continue
-
-		existing = frappe.db.exists(
-			"Alerta de Inventario",
-			{
-				"articulo": item.name,
-				"tipo_alerta": "Stock bajo",
-				"estado_alerta": "Pendiente",
-			},
-		)
-		if existing:
-			continue
-
-		alert = frappe.get_doc(
-			{
-				"doctype": "Alerta de Inventario",
-				"articulo": item.name,
-				"tipo_alerta": "Stock bajo",
-				"estado_alerta": "Pendiente",
-				"fecha_reporte": frappe.utils.today(),
-				"observacion": (
-					f"Stock actual {item.stock_actual or 0} {item.unidad_medida or ''} "
-					f"menor al stock critico {item.stock_critico or 0}."
-				),
-			}
-		)
-		alert.insert(ignore_permissions=True)
-		created.append(item.nombre_articulo)
-
-	frappe.db.commit()
-	return {"created": len(created), "items": created[:20]}
-
-
-def apply_default_gastronomy_stock_critical(default_value=10):
-	"""Set a default critical stock for Gastronomia items without a minimum."""
-	items = frappe.get_all(
-		"Articulo de Inventario",
-		filters={
-			"modulo": "Gastronomia",
-			"stock_critico": ["<=", 0],
-		},
-		pluck="name",
-		limit_page_length=5000,
-	)
-
-	for name in items:
-		frappe.db.set_value(
-			"Articulo de Inventario",
-			name,
-			"stock_critico",
-			default_value,
-			update_modified=False,
-		)
-
-	frappe.db.commit()
-	return {"updated": len(items), "stock_critico": default_value}
 
 
 def create_movimiento_inventario_doctype():
@@ -1804,57 +1696,6 @@ def _apply_custom_docperms(doctype_name, permissions_by_role):
 
 	frappe.clear_cache(doctype=doctype_name)
 	return {"created": created, "updated": updated}
-
-
-def get_inventory_permission_summary():
-	"""Return a compact permission summary for the PRD roles."""
-	roles = {
-		"SuperAdministrador Inventario",
-		"Admin TI",
-		"Admin Cocina",
-		"Revisor",
-		"System Manager",
-	}
-	summary = {}
-	for doctype_name in ("Articulo de Inventario", "Alerta de Inventario", "Ubicacion", "Asignacion"):
-		if not frappe.db.exists("DocType", doctype_name):
-			continue
-		doc = frappe.get_doc("DocType", doctype_name)
-		doctype_permissions = [
-			{
-				"role": perm.role,
-				"read": perm.read,
-				"write": perm.write,
-				"create": perm.create,
-				"delete": perm.delete,
-				"report": perm.report,
-				"export": perm.export,
-				"import": perm.get("import"),
-				"print": perm.print,
-				"select": perm.select,
-			}
-			for perm in doc.permissions
-			if perm.role in roles
-		]
-		custom_permissions = frappe.get_all(
-			"Custom DocPerm",
-			filters={"parent": doctype_name, "role": ["in", list(roles)]},
-			fields=[
-				"role",
-				"read",
-				"write",
-				"create",
-				"delete",
-				"report",
-				"export",
-				"import",
-				"print",
-				"select",
-			],
-			limit_page_length=100,
-		)
-		summary[doctype_name] = doctype_permissions + custom_permissions
-	return summary
 
 
 def create_inventory_number_cards():
@@ -2648,7 +2489,6 @@ frappe.ui.form.on('User', {
 			results.append(script.name)
 	return results
 
-	return results
 
 def create_inventory_print_formats():
 	"""Create Custom Print Formats for Inventory (QR Labels and Movement Vouchers).
