@@ -393,6 +393,8 @@ def confirmar_importacion_excel_endpoint(file_name, sheet_name=None):
 	_require_import_role()
 
 	file_doc = frappe.get_doc("File", file_name)
+	if file_doc.owner != frappe.session.user:
+		frappe.throw("No tiene permiso para confirmar esta importacion.", frappe.PermissionError)
 	full_path = file_doc.get_full_path()
 	if not os.path.isfile(full_path):
 		frappe.throw("El archivo subido ya no esta disponible, vuelva a subirlo.")
@@ -515,6 +517,8 @@ def confirmar_importacion_ubicaciones_endpoint(file_name):
 	_require_import_role()
 
 	file_doc = frappe.get_doc("File", file_name)
+	if file_doc.owner != frappe.session.user:
+		frappe.throw("No tiene permiso para confirmar esta importacion.", frappe.PermissionError)
 	full_path = file_doc.get_full_path()
 	if not os.path.isfile(full_path):
 		frappe.throw("El archivo subido ya no esta disponible, vuelva a subirlo.")
@@ -622,6 +626,8 @@ def confirmar_importacion_modulos_endpoint(file_name):
 	_require_import_role()
 
 	file_doc = frappe.get_doc("File", file_name)
+	if file_doc.owner != frappe.session.user:
+		frappe.throw("No tiene permiso para confirmar esta importacion.", frappe.PermissionError)
 	full_path = file_doc.get_full_path()
 	if not os.path.isfile(full_path):
 		frappe.throw("El archivo subido ya no esta disponible, vuelva a subirlo.")

@@ -73,7 +73,11 @@ function mostrar_preview(data) {
 	if (data.detalle_errores && data.detalle_errores.length) {
 		data.detalle_errores.forEach(function(e) {
 			const tr = document.createElement("tr");
-			tr.innerHTML = `<td>${e.row}</td><td>${e.nombre_articulo || ""}</td><td>${e.motivo}</td>`;
+			[e.row, e.nombre_articulo || "", e.motivo].forEach(function(val) {
+				const td = document.createElement("td");
+				td.textContent = val;
+				tr.appendChild(td);
+			});
 			tbody.appendChild(tr);
 		});
 		document.getElementById("preview-tabla").style.display = "block";
