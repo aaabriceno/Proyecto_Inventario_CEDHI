@@ -274,6 +274,30 @@ def enforce_default_workspace(doc, method=None):
         doc.default_workspace = "Inventario CEDHI"
 
 
+def protect_inventory_user_fields(doc, method=None):
+    """Impide que un usuario no-superadmin modifique su propio modulo/ubicacion asignada.
+
+    inventario_modulo_asignado e inventario_ubicacion_asignada son campos
+    que solo el SuperAdmin debe poder asignar: determinan el alcance de acceso
+    del rol Reportante (que filtra articulos por ubicacion_asignada). Si el
+    propio usuario pudiera cambiarlos, podria ampliar su propio acceso.
+    """
+    from inventario_cedhi.permissions import FULL_ACCESS_ROLES, _user_roles
+    caller = frappe.session.user
+    if _user_roles(caller) & FULL_ACCESS_ROLES:
+        return
+    if doc.name != caller:
+        return
+    protected = ("inventario_modulo_asignado", "inventario_ubicacion_asignada")
+    for field in protected:
+        original = frappe.db.get_value("User", doc.name, field)
+        if getattr(doc, field, None) != original:
+            frappe.throw(
+                frappe._("No tiene permiso para modificar el campo '{0}'.").format(field),
+                frappe.PermissionError,
+            )
+
+
 @frappe.whitelist()
 def buscar_articulo_por_codigo(codigo):
     """Busca un Articulo de Inventario por codigo escaneado (QR/barcode).

@@ -2457,6 +2457,10 @@ frappe.ui.form.on('User', {
         // Ocultar seccion de modulos ERPNext (Almacen, Automatizacion, etc.)
         // irrelevantes para el inventario CEDHI
         frm.toggle_display('block_modules', isFullAdmin);
+        // Modulo y ubicacion asignada: solo SuperAdmin puede editarlos
+        // (determinan el alcance de acceso del Reportante)
+        frm.set_df_property('inventario_modulo_asignado', 'read_only', isFullAdmin ? 0 : 1);
+        frm.set_df_property('inventario_ubicacion_asignada', 'read_only', isFullAdmin ? 0 : 1);
     }
 });
 """,

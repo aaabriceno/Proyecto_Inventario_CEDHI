@@ -185,6 +185,7 @@ doc_events = {
 		"validate": [
 			"inventario_cedhi.inventory_logic.enforce_user_language",
 			"inventario_cedhi.inventory_logic.enforce_default_workspace",
+			"inventario_cedhi.inventory_logic.protect_inventory_user_fields",
 		],
 	},
 	"Data Import": {
