@@ -2941,11 +2941,7 @@ def create_inventory_workspace():
 
 		{"id": "s3", "type": "spacer", "data": {"col": 12}},
 
-		# Row 5: Charts for Assets & Modules
-		{"id": "ch_activos", "type": "chart", "data": {"chart_name": "Estado de Activos", "col": 6}},
-		{"id": "ch_modulos", "type": "chart", "data": {"chart_name": "Distribución por Módulo", "col": 6}},
-
-		# Row 6: Charts for Alerts
+		# Row 5: Charts for Alerts
 		{"id": "ch_alertas_tipo", "type": "chart", "data": {"chart_name": "Alertas por Tipo", "col": 6}},
 		{"id": "ch_alertas_estado", "type": "chart", "data": {"chart_name": "Alertas por Estado", "col": 6}},
 	]

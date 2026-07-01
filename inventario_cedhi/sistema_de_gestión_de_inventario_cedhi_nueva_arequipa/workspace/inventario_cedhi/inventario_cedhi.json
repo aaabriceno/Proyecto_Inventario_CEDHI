@@ -1,0 +1,126 @@
+{
+ "charts": [
+  {
+   "chart_name": "Estado de Activos"
+  },
+  {
+   "chart_name": "Distribuci\u00f3n por M\u00f3dulo"
+  },
+  {
+   "chart_name": "Alertas por Tipo"
+  },
+  {
+   "chart_name": "Alertas por Estado"
+  }
+ ],
+ "content": "[{\"id\": \"hero\", \"type\": \"header\", \"data\": {\"text\": \"<style>.main-banner { background: linear-gradient(135deg, #093AB3 0%, #1C2E7A 100%) !important; color: white !important; padding: 32px 40px; border-radius: 20px; box-shadow: 0 12px 30px rgba(9, 58, 179, 0.2) !important; margin-bottom: 20px; }.main-banner h1 { font-size: 32px; font-weight: 700; margin: 0 0 8px 0; color: white !important; letter-spacing: -0.02em; }.main-banner p { font-size: 15px; margin: 0; color: rgba(255, 255, 255, 0.9) !important; }.navbar .navbar-brand img { filter: brightness(0) invert(1); max-height: 42px !important; transform: scale(1.8) !important; transform-origin: left center; margin-top: -8px; }.navbar { background: #00247f !important; }</style><div class='hero-banner main-banner'><h1>Inventario CEDHI</h1><p>Gesti\\u00f3n inteligente de activos y suministros.</p></div>\", \"col\": 12}}, {\"id\": \"mc_total\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Articulos\", \"col\": 3}}, {\"id\": \"mc_activos\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Art\\u00edculos Activos\", \"col\": 3}}, {\"id\": \"mc_reparacion\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Art\\u00edculos en Reparaci\\u00f3n\", \"col\": 3}}, {\"id\": \"mc_baja\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Art\\u00edculos de Baja\", \"col\": 3}}, {\"id\": \"mc_alertas_pend\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Alertas Pendientes\", \"col\": 6}}, {\"id\": \"mc_alertas_tot\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Alertas Totales\", \"col\": 6}}, {\"id\": \"s1\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ch1\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Entradas vs Salidas\", \"col\": 6}}, {\"id\": \"ch2\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Movimientos del Mes\", \"col\": 6}}, {\"id\": \"ch3\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Estado de Activos\", \"col\": 6}}, {\"id\": \"ch4\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Distribuci\\u00f3n por M\\u00f3dulo\", \"col\": 6}}, {\"id\": \"s2\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"c1\", \"type\": \"card\", \"data\": {\"card_name\": \"Operaciones\", \"col\": 4}}, {\"id\": \"s3\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ch_alertas_tipo\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Alertas por Tipo\", \"col\": 6}}, {\"id\": \"ch_alertas_estado\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Alertas por Estado\", \"col\": 6}}]",
+ "creation": "2026-04-29 13:33:44.123354",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 1,
+ "icon": "package",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Inventario CEDHI",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Operaciones",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cat\u00e1logo Maestro",
+   "link_count": 0,
+   "link_to": "Articulo de Inventario",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kardex Digital",
+   "link_count": 0,
+   "link_to": "Movimiento de Inventario",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Incidencias",
+   "link_count": 0,
+   "link_to": "Alerta de Inventario",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-30 22:40:06.823715",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Inventario CEDHI",
+ "number_cards": [
+  {
+   "number_card_name": "Total Articulos"
+  },
+  {
+   "number_card_name": "Art\u00edculos Activos"
+  },
+  {
+   "number_card_name": "Art\u00edculos en Reparaci\u00f3n"
+  },
+  {
+   "number_card_name": "Art\u00edculos de Baja"
+  },
+  {
+   "number_card_name": "Alertas Pendientes"
+  },
+  {
+   "number_card_name": "Alertas Totales"
+  }
+ ],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "SuperAdministrador Inventario"
+  },
+  {
+   "role": "Admin TI"
+  },
+  {
+   "role": "Admin Cocina"
+  },
+  {
+   "role": "Revisor"
+  },
+  {
+   "role": "Reportante"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "CONSULTAR ARTICULO (QR)",
+   "type": "URL",
+   "url": "/consultar_articulo"
+  }
+ ],
+ "title": "Inventario CEDHI"
+}

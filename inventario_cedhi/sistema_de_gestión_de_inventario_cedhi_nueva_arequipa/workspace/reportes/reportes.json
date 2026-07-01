@@ -1,0 +1,109 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"header\", \"type\": \"header\", \"data\": {\"text\": \"<div class=\\\"hero-banner reports-banner\\\"><h1>Reportes</h1><p>Visualizaci\\u00f3n de datos anal\\u00edticos, stock cr\\u00edtico y reportes hist\\u00f3ricos.</p></div>\", \"col\": 12}}, {\"id\": \"card_break\", \"type\": \"card\", \"data\": {\"card_name\": \"Reportes de Gesti\\u00f3n\", \"col\": 12}}]",
+ "creation": "2026-06-08 22:09:40.123955",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 1,
+ "icon": "trending-up",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Reportes",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reportes de Gesti\u00f3n",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "Articulo de Inventario",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Reporte Maestro (Excel)",
+   "link_count": 0,
+   "link_to": "Reporte Maestro de Inventario",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Alerta de Inventario",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Bandeja de Alertas",
+   "link_count": 0,
+   "link_to": "Bandeja de Alertas CEDHI",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Movimiento de Inventario",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Kardex de Movimientos",
+   "link_count": 0,
+   "link_to": "Kardex de Movimientos",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Articulo de Inventario",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Stock Cr\u00edtico",
+   "link_count": 0,
+   "link_to": "Stock Critico Gastronomia",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Articulo de Inventario",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Resumen por \u00c1rea",
+   "link_count": 0,
+   "link_to": "Resumen Inventario por Modulo",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-30 22:23:07.301489",
+ "modified_by": "Administrator",
+ "module": "Sistema de Gesti\u00f3n de Inventario CEDHI Nueva Arequipa",
+ "name": "Reportes",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Inventario CEDHI",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "SuperAdministrador Inventario"
+  },
+  {
+   "role": "Admin TI"
+  },
+  {
+   "role": "Admin Cocina"
+  },
+  {
+   "role": "Revisor"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [],
+ "title": "Reportes"
+}
