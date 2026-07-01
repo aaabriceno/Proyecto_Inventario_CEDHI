@@ -320,7 +320,18 @@ def _has_inventory_module_permission(doc, ptype=None, user=None):
 	if not doc:
 		return bool(modules)
 
-	doc_module = getattr(doc, "modulo", None)
+	# Para write, validar contra el modulo original en BD (no el valor en
+	# memoria): si el usuario cambia el campo modulo a otro modulo, Frappe
+	# llama has_permission con el doc ya modificado en memoria. Usar el valor
+	# en DB evita que el cambio de modulo falle por "sin permiso sobre modulo
+	# destino" -- lo que importa es si el usuario puede editar el articulo
+	# segun donde estaba originalmente.
+	if ptype not in {"read", "select", "print", "email", "report", "export"} and not getattr(doc, "is_new", lambda: False)():
+		db_module = frappe.db.get_value(doc.doctype, doc.name, "modulo")
+		doc_module = db_module or getattr(doc, "modulo", None)
+	else:
+		doc_module = getattr(doc, "modulo", None)
+
 	if not doc_module:
 		return bool(modules)
 
