@@ -2437,9 +2437,10 @@ frappe.ui.form.on('Movimiento de Inventario', {
 			"script": """
 frappe.ui.form.on('Articulo de Inventario', {
     refresh: function(frm) {
-        // RF-TI-01: Brand/Model mandatory for TI (unico modulo con equipos fisicos identificables)
-        frm.toggle_reqd('marca', frm.doc.modulo === 'TI');
-        frm.toggle_reqd('modelo', frm.doc.modulo === 'TI');
+        // marca y modelo son opcionales para todos los modulos (aplican a
+        // cualquier bien fisico, no solo TI)
+        frm.toggle_reqd('marca', false);
+        frm.toggle_reqd('modelo', false);
 
         // RF-GA-03: Visual feedback for Critical Stock
         if (frm.doc.stock_actual <= frm.doc.stock_critico && frm.doc.stock_critico > 0) {
