@@ -725,10 +725,6 @@ def configure_inventory_list_views():
 			[doctype_name, "modulo", "=", "Gastronomia", False],
 			[doctype_name, "grupo", "=", "LICORES", False],
 		],
-		"Gastronomia con Stock > 0": [
-			[doctype_name, "modulo", "=", "Gastronomia", False],
-			[doctype_name, "stock_actual", ">", 0, False],
-		],
 	}
 
 	created = []
