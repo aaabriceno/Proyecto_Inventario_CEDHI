@@ -3,8 +3,8 @@ frappe.query_reports["Kardex de Movimientos"] = {
 		{
 			"fieldname": "modulo",
 			"label": __("Módulo"),
-			"fieldtype": "Select",
-			"options": "\nTI\nGastronomia\nGeneral",
+			"fieldtype": "Link",
+			"options": "Modulo",
 		},
 		{
 			"fieldname": "ubicacion",

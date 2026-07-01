@@ -313,13 +313,15 @@ fixtures = [
 				"in",
 				[
 					"SuperAdministrador Inventario",
-					"Admin TI",
-					"Admin Cocina",
 					"Revisor",
 					"Reportante",
 				],
 			]
 		],
+	},
+	{
+		"dt": "Role",
+		"filters": [["name", "like", "Admin %"]],
 	},
 	{
 		"dt": "Custom Field",

@@ -158,14 +158,22 @@
 function cedhi_apply_role_theme() {
     var roles = (window.frappe && frappe.user_roles) || [];
 
-    // Mapa de rol → color de acento en sidebar
-    var roleColors = {
-        'Admin Cocina':                   '#2DAE6A',  // verde
-        'Admin TI':                        '#00AECC',  // cian
-        'Revisor':                         '#1A2F6E',  // navy
-        'Reportante':                      '#5A6A8E',  // gris
-        'SuperAdministrador Inventario':   '#D9202A',  // rojo
+    // Colores fijos para roles no-modulo
+    var fixedColors = {
+        'Revisor':                         '#1A2F6E',
+        'Reportante':                      '#5A6A8E',
+        'SuperAdministrador Inventario':   '#D9202A',
     };
+    // Paleta para roles Admin dinamicos (Admin TI, Admin Cocina, Admin Estilismo, etc.)
+    var adminPalette = [
+        '#00AECC', '#2DAE6A', '#E67E22', '#9B59B6',
+        '#E74C3C', '#1ABC9C', '#F39C12', '#2980B9',
+    ];
+    var roleColors = Object.assign({}, fixedColors);
+    var adminRoles = roles.filter(function(r) { return r.startsWith('Admin '); }).sort();
+    adminRoles.forEach(function(r, i) {
+        roleColors[r] = adminPalette[i % adminPalette.length];
+    });
 
     var matchedRole = Object.keys(roleColors).find(function(r) {
         return roles.includes(r);
