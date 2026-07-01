@@ -1,9 +1,11 @@
 """Importador de Articulo de Inventario desde la plantilla Excel real del
 CEDHI (formato "CARITAS" con columna Modulo, ver datos_iniciales/).
 
-Header en la fila 11 (B/R/M en fila 12), datos desde la fila 13. Columnas
-confirmadas en "1. DIRECCION.xlsx" (plantilla definitiva del encargado del
-CEDHI, ya no cambia):
+Header en la fila 11 (B/R/M en fila 12), datos desde la fila 13. El
+importador detecta automaticamente las columnas leyendo los nombres del
+header en fila 11, por lo que funciona aunque distintos Excel tengan las
+columnas en posiciones ligeramente distintas. Si no encuentra el header,
+cae a las posiciones por defecto de "1. DIRECCION.xlsx":
 
   A=N  C=CANT.  E=DESCRIPCION  K=Identificador Unico  L=Modelo  M=SERIE
   N=MARCA  O=UBICACION  R=Modulo  S=Benefactor  T=FECHA ADQUISICION
@@ -29,6 +31,8 @@ DATOS_INICIALES_DIR = "datos_iniciales"
 HEADER_ROW = 11
 FIRST_DATA_ROW = 13
 
+# Posiciones por defecto (fallback si el header no se detecta automaticamente).
+# Confirmadas en "1. DIRECCION.xlsx".
 COL_CANTIDAD = 3
 COL_DESCRIPCION = 5
 COL_IDENTIFICADOR_UNICO = 11
@@ -44,6 +48,52 @@ COL_ESTADO_R = 22
 COL_ESTADO_M = 23
 COL_OBSERVACIONES = 24
 
+# Mapeo de columna_name -> lista de palabras clave (se prueban en orden,
+# se asigna la primera columna del header que contenga alguna de ellas).
+# Mas especifico primero para evitar falsos positivos.
+_HEADER_MAP = [
+    ("COL_CANTIDAD",           ["cant."]),
+    ("COL_DESCRIPCION",        ["descripci"]),
+    ("COL_IDENTIFICADOR_UNICO",["identificador"]),
+    ("COL_UBICACION",          ["ubicaci"]),
+    ("COL_MODULO",             ["modulo"]),
+    ("COL_BENEFACTOR",         ["benefactor", "venefactor"]),
+    ("COL_FECHA_ADQUISICION",  ["adquisici"]),
+    ("COL_OBSERVACIONES",      ["observaci"]),
+    ("COL_MARCA",              ["marca"]),
+    # MODELO y SERIE son ambiguos (en algunos Excel el orden se invierte),
+    # se asignan al primer match que NO sea ya "MARCA".
+    ("COL_MODELO",             ["modelo"]),
+    ("COL_SERIE",              ["serie"]),
+]
+
+
+def _detect_columns(ws):
+    """Lee el header en HEADER_ROW y devuelve un dict col_name -> numero_columna.
+
+    Si no puede detectar las columnas criticas (UBICACION, MODULO, CANTIDAD),
+    devuelve None para que el llamador use las constantes por defecto.
+    """
+    # Recopilar todos los valores del header una sola vez.
+    header = {}
+    for col in range(1, ws.max_column + 1):
+        val = ws.cell(row=HEADER_ROW, column=col).value
+        if val:
+            header[col] = str(val).lower().strip()
+
+    cols = {}
+    for col_name, keywords in _HEADER_MAP:
+        for col, val_lower in header.items():
+            if any(kw in val_lower for kw in keywords):
+                if col_name not in cols and col not in cols.values():
+                    cols[col_name] = col
+                    break
+
+    # Las 3 criticas deben estar presentes para confiar en la deteccion.
+    if all(k in cols for k in ("COL_UBICACION", "COL_MODULO", "COL_CANTIDAD")):
+        return cols
+    return None
+
 ESTADO_MAP = {
 	"b": "Activo",
 	"r": "En reparación",
@@ -56,14 +106,6 @@ def _clean(value):
 		return ""
 	return str(value).strip()
 
-
-def _estado_desde_fila(ws, row):
-	"""Lee cual de las columnas B/R/M tiene una 'x' y devuelve el estado del sistema."""
-	for col, codigo in ((COL_ESTADO_B, "b"), (COL_ESTADO_R, "r"), (COL_ESTADO_M, "m")):
-		marca = _clean(ws.cell(row=row, column=col).value).lower()
-		if marca:
-			return ESTADO_MAP[codigo], codigo.upper()
-	return "Activo", None
 
 
 def _resolve_ubicacion(nombre):
@@ -128,6 +170,34 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path
 	sheet_name = sheet_name or wb.sheetnames[0]
 	ws = wb[sheet_name]
 
+	# Detectar columnas por nombre de header (robusto ante columnas desplazadas).
+	# Si la deteccion falla, usar las constantes por defecto.
+	detected = _detect_columns(ws)
+	col_cantidad          = detected.get("COL_CANTIDAD", COL_CANTIDAD) if detected else COL_CANTIDAD
+	col_descripcion       = detected.get("COL_DESCRIPCION", COL_DESCRIPCION) if detected else COL_DESCRIPCION
+	col_id_unico          = detected.get("COL_IDENTIFICADOR_UNICO", COL_IDENTIFICADOR_UNICO) if detected else COL_IDENTIFICADOR_UNICO
+	col_modelo            = detected.get("COL_MODELO", COL_MODELO) if detected else COL_MODELO
+	col_serie             = detected.get("COL_SERIE", COL_SERIE) if detected else COL_SERIE
+	col_marca             = detected.get("COL_MARCA", COL_MARCA) if detected else COL_MARCA
+	col_ubicacion         = detected.get("COL_UBICACION", COL_UBICACION) if detected else COL_UBICACION
+	col_modulo            = detected.get("COL_MODULO", COL_MODULO) if detected else COL_MODULO
+	col_fecha_adquisicion = detected.get("COL_FECHA_ADQUISICION", COL_FECHA_ADQUISICION) if detected else COL_FECHA_ADQUISICION
+	col_observaciones     = detected.get("COL_OBSERVACIONES", COL_OBSERVACIONES) if detected else COL_OBSERVACIONES
+
+	# Las columnas de ESTADO B/R/M estan en la fila 12 (sub-header), no en la
+	# fila 11 del header principal -- no se detectan por nombre, se calculan
+	# a partir de la columna ESTADO detectada o se usan las constantes fijas.
+	# En todos los Excel vistos, B/R/M siempre estan justo despues de FECHA
+	# ADQUISICION, asi que si detectamos col_fecha_adquisicion podemos derivarlas.
+	if detected and "COL_FECHA_ADQUISICION" in detected:
+		col_estado_b = col_fecha_adquisicion + 1
+		col_estado_r = col_fecha_adquisicion + 2
+		col_estado_m = col_fecha_adquisicion + 3
+	else:
+		col_estado_b = COL_ESTADO_B
+		col_estado_r = COL_ESTADO_R
+		col_estado_m = COL_ESTADO_M
+
 	creados = []
 	saltados = []
 	errores = []
@@ -137,11 +207,11 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path
 
 	for row in range(FIRST_DATA_ROW, ws.max_row + 1):
 		numero_origen = ws.cell(row=row, column=1).value
-		descripcion = _clean(ws.cell(row=row, column=COL_DESCRIPCION).value)
+		descripcion = _clean(ws.cell(row=row, column=col_descripcion).value)
 		if numero_origen is None and not descripcion:
 			continue
 
-		cantidad_raw = ws.cell(row=row, column=COL_CANTIDAD).value
+		cantidad_raw = ws.cell(row=row, column=col_cantidad).value
 		try:
 			cantidad = int(float(cantidad_raw)) if cantidad_raw not in (None, "") else 0
 		except (ValueError, TypeError):
@@ -152,7 +222,7 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path
 			detalle_errores.append({"row": row, "nombre_articulo": descripcion, "motivo": motivo})
 			continue
 
-		ubicacion_nombre = _clean(ws.cell(row=row, column=COL_UBICACION).value)
+		ubicacion_nombre = _clean(ws.cell(row=row, column=col_ubicacion).value)
 		ubicacion = _resolve_ubicacion(ubicacion_nombre)
 		if not ubicacion:
 			motivo = f"ubicacion '{ubicacion_nombre}' no encontrada en el sistema"
@@ -160,7 +230,7 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path
 			detalle_errores.append({"row": row, "nombre_articulo": descripcion, "motivo": motivo})
 			continue
 
-		modulo_nombre = _clean(ws.cell(row=row, column=COL_MODULO).value)
+		modulo_nombre = _clean(ws.cell(row=row, column=col_modulo).value)
 		modulo = _resolve_modulo(modulo_nombre)
 		if not modulo:
 			motivo = f"modulo '{modulo_nombre}' no encontrado en el sistema"
@@ -168,15 +238,24 @@ def importar_articulos_excel(filename, sheet_name=None, dry_run=False, full_path
 			detalle_errores.append({"row": row, "nombre_articulo": descripcion, "motivo": motivo})
 			continue
 
-		estado, estado_conservacion = _estado_desde_fila(ws, row)
+		# Estado B/R/M usando columnas detectadas dinamicamente.
+		estado, estado_conservacion = None, None
+		for col_e, codigo in ((col_estado_b, "b"), (col_estado_r, "r"), (col_estado_m, "m")):
+			marca_estado = _clean(ws.cell(row=row, column=col_e).value).lower()
+			if marca_estado:
+				estado = ESTADO_MAP[codigo]
+				estado_conservacion = codigo.upper()
+				break
+		if not estado:
+			estado, estado_conservacion = "Activo", None
 
-		marca = _clean(ws.cell(row=row, column=COL_MARCA).value)
-		modelo = _clean(ws.cell(row=row, column=COL_MODELO).value)
-		serie = _clean(ws.cell(row=row, column=COL_SERIE).value)
+		marca = _clean(ws.cell(row=row, column=col_marca).value)
+		modelo = _clean(ws.cell(row=row, column=col_modelo).value)
+		serie = _clean(ws.cell(row=row, column=col_serie).value)
 		if serie:
 			modelo = f"{modelo} / Serie {serie}".strip(" /")
-		observaciones = _clean(ws.cell(row=row, column=COL_OBSERVACIONES).value)
-		fecha_adquisicion = ws.cell(row=row, column=COL_FECHA_ADQUISICION).value
+		observaciones = _clean(ws.cell(row=row, column=col_observaciones).value)
+		fecha_adquisicion = ws.cell(row=row, column=col_fecha_adquisicion).value
 
 		fuente_datos = filename
 		hoja_origen = sheet_name
