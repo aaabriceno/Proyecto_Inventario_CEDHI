@@ -60,7 +60,23 @@ El archivo `.env` tiene la configuracion basica lista para usar. No necesitas ca
 
 ---
 
-### Paso 3 — Crear los accesos directos en el escritorio
+### Paso 3 — Permitir ejecucion de scripts en PowerShell (solo la primera vez)
+
+Windows bloquea los scripts `.ps1` por defecto. Hay que habilitarlos una sola vez:
+
+1. Busca **PowerShell** en el menu Inicio.
+2. Haz clic derecho → **"Ejecutar como administrador"**.
+3. Ejecuta este comando y responde `S` cuando pregunte:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+4. Cierra esa ventana de PowerShell.
+
+---
+
+### Paso 4 — Crear los accesos directos en el escritorio
 
 Haz clic derecho en el archivo `crear_accesos_directos.ps1` (dentro de `docker_setup\windows\`) y selecciona **"Ejecutar con PowerShell"**.
 
@@ -73,7 +89,7 @@ Esto crea tres iconos en tu escritorio:
 
 ---
 
-### Paso 4 — Primera instalacion (solo la primera vez)
+### Paso 5 — Primera instalacion (solo la primera vez)
 
 Haz doble clic en **"Iniciar Sistema CEDHI"** en el escritorio.
 
@@ -88,7 +104,7 @@ http://inventario.localhost:8080
 
 ---
 
-### Paso 5 — Primer ingreso al sistema
+### Paso 6 — Primer ingreso al sistema
 
 En la pantalla de login:
 
