@@ -101,10 +101,10 @@ body {
     position: relative;
     padding: 32px 40px;
     border-radius: 20px;
-    color: #ffffff !important;
+    color: var(--cedhi-text-main) !important;
     margin-bottom: 30px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--cedhi-border);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -112,15 +112,15 @@ body {
     font-size: 32px;
     font-weight: 700;
     margin: 0 0 8px 0;
-    color: #ffffff !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    color: var(--cedhi-navy) !important;
+    text-shadow: none;
     letter-spacing: -0.02em;
 }
 
 .hero-banner p {
     font-size: 15px;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.9) !important;
+    color: var(--cedhi-text-muted) !important;
     margin: 0;
     max-width: 600px;
     line-height: 1.5;
@@ -149,6 +149,17 @@ body {
     background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
     pointer-events: none;
+}
+
+/* El widget de Frappe que envuelve el banner_text tiene fondo blanco propio.
+   Se fuerza transparente para que el gradiente del .hero-banner sea visible. */
+.widget.header-widget-box,
+.widget.header-widget-box .widget-body,
+.widget.header-widget-box .widget-head {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
 }
 
 /* Specific Gradient Styles */
@@ -789,15 +800,24 @@ body, .frappe-app {
 }
 
 /* ── Botón primario ── */
-.btn-primary {
+.btn-primary,
+.btn.btn-primary,
+button.btn-primary,
+a.btn-primary,
+.page-actions .btn.btn-primary {
   background: var(--cedhi-navy) !important;
   border-color: var(--cedhi-navy) !important;
   color: #ffffff !important;
+  --neutral: #ffffff;
   font-family: 'Outfit', sans-serif !important;
   font-weight: 600 !important;
   border-radius: 8px !important;
 }
-.btn-primary:hover {
+.btn-primary:hover,
+.btn.btn-primary:hover,
+button.btn-primary:hover,
+a.btn-primary:hover,
+.page-actions .btn.btn-primary:hover {
   background: var(--cedhi-navy-light) !important;
   border-color: var(--cedhi-navy-light) !important;
   color: #ffffff !important;
